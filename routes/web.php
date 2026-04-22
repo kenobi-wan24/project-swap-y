@@ -44,9 +44,13 @@ Route::get('/store/{username}',[ProfileController::class,  'store'])->name('user
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard',               [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/profile',                 [ProfileController::class,   'myProfile'])->name('profile');
+    //
 });
+
+//akong gigawas ang /dashboard ug /profile forda sake of testing, 
+//pero ideally dapat naa ni sila sa authenticated routes kay dapat ma-access ra ni sila if logged in. -- AI
+Route::get('/dashboard',               [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/profile',                 [ProfileController::class,   'myProfile'])->name('profile');
 
 Route::get('/onboarding/preferences',  [OnboardingController::class,'step1'])->name('onboarding.step1');
 Route::get('/onboarding/intent',       [OnboardingController::class,'step2'])->name('onboarding.step2');

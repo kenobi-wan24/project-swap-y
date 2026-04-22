@@ -468,7 +468,7 @@
                     <p class="text-xs text-gray-400 mb-4">For serious property swappers</p>
                     <div class="flex items-end gap-1">
                         <span class="text-xs text-gray-400 mb-2">$</span>
-                        <span class="text-5xl font-bold text-white leading-none">79</span>
+                        <span class="text-5xl font-bold text-white leading-none">49</span>
                         <span class="text-2xl font-bold text-white mb-0.5">.99</span>
                         <span class="text-gray-400 text-sm mb-1">/mo</span>
                     </div>
