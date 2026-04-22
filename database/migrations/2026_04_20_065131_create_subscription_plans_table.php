@@ -16,12 +16,14 @@ return new class extends Migration {
             $table->boolean('can_feature')->default(false);
             $table->boolean('can_three_way_swap')->default(false);
             $table->text('description')->nullable();
-            $table->timestamps();
-        });
-    }
-
+            $table->timestamps();  
+        });    
+    }                       
+            
     public function down(): void
     {
         Schema::dropIfExists('subscription_plans');
-    }
-};
+    }      
+};   
+
+
