@@ -31,10 +31,15 @@ function checkUsername() {
     }
     usernameStatus.value = 'checking'
     usernameTimer = setTimeout(async () => {
-        // TODO (Backend): GET /api/check-username?username=X → { available: true/false }
-        // Simulated for now:
-        usernameStatus.value = signUp.username.length > 4 ? 'available' : 'taken'
-    }, 500)
+    try {
+        const res = await axios.get('/api/check-username', {
+            params: { username: signUp.username }
+        })
+        usernameStatus.value = res.data.available ? 'available' : 'taken'
+    } catch {
+        usernameStatus.value = ''
+    }
+}, 500)
 }
 
 async function handleSignUp() {

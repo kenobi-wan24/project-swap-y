@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    // ── Show login/register page ──────────────────────────────────────────────
+
     public function showLogin()
     {
         return view('pages.auth');
@@ -19,6 +21,8 @@ class AuthController extends Controller
     {
         return view('pages.auth');
     }
+
+    // ── Register ──────────────────────────────────────────────────────────────
 
     public function register(Request $request)
     {
@@ -43,6 +47,8 @@ class AuthController extends Controller
         ]);
     }
 
+    // ── Login ─────────────────────────────────────────────────────────────────
+
     public function login(Request $request)
     {
         $request->validate([
@@ -50,7 +56,10 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (!Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+        if (!Auth::attempt([
+            'email'    => $request->email,
+            'password' => $request->password,
+        ])) {
             return response()->json([
                 'errors' => [
                     'email' => ['These credentials do not match our records.'],
@@ -65,6 +74,8 @@ class AuthController extends Controller
         ]);
     }
 
+    // ── Logout ────────────────────────────────────────────────────────────────
+
     public function logout(Request $request)
     {
         Auth::logout();
@@ -72,5 +83,26 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('home');
+    }
+
+    // ── Username availability check ───────────────────────────────────────────
+
+    public function checkUsername(Request $request)
+    {
+        $username = $request->query('username', '');
+
+        if (strlen($username) < 3) {
+            return response()->json(['available' => false, 'message' => 'Too short.']);
+        }
+
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+            return response()->json(['available' => false, 'message' => 'Only letters, numbers, and underscores.']);
+        }
+
+        $taken = User::where('username', $username)->exists();
+
+        return response()->json([
+            'available' => !$taken,
+        ]);
     }
 }
