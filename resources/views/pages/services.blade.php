@@ -6,4 +6,5 @@
     id="services-app"
     data-services="{{ json_encode($services) }}"
 ></div>
-@endsection
+@endsection 
+

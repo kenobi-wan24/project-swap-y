@@ -14,22 +14,10 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('username');
+            $table->string('username')->unique();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('avatar')->nullable();
-            $table->text('bio')->nullable();
-            $table->string('phone', 20)->nullable();
-            $table->text('address')->nullable();
-            $table->string('city',100)->nullable(); 
-            $table->string('province',100)->nullable();
-            $table->string('region', 100)->nullable();
-            $table->string('zip_code', 10)->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->boolean('is_banned')->default(false);
-            $table->timestamp('banned_at')->nullable();
-            $table->text('ban_reason')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
