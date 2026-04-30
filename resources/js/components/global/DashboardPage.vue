@@ -1,6 +1,7 @@
 <script setup>
 // filepath: resources/js/components/global/DashboardPage.vue
 import { ref, computed } from 'vue'
+import PostItemModal from '../dashboard/PostItemModal.vue'
 
 const el          = document.getElementById('dashboard-app')
 const user        = ref(JSON.parse(el?.dataset.user        || '{}'))
@@ -9,6 +10,7 @@ const matches     = ref(JSON.parse(el?.dataset.matches     || '[]'))
 const swaps       = ref(JSON.parse(el?.dataset.swaps       || '[]'))
 const messages    = ref(JSON.parse(el?.dataset.messages    || '[]'))
 const credibility = ref(JSON.parse(el?.dataset.credibility || '{}'))
+const showPostModal = ref(false)
 
 // ── Fake data ─────────────────────────────────────────────────────────────────
 const fakeUser = { name: 'Alex Rivera', username: 'alex_r', email: 'alex@example.com', avatar: null }
@@ -188,13 +190,18 @@ function matchBadgeBg(pct) {
 
             <!-- Right: CTAs -->
             <div style="display:flex;flex-direction:column;gap:10px;flex-shrink:0;">
-                <a href="#"
-                   style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#ED730C;color:#fff;font-size:0.9rem;font-weight:800;padding:14px 26px;border-radius:13px;text-decoration:none;transition:all .2s;box-shadow:0 6px 24px rgba(237,115,12,0.45);white-space:nowrap;letter-spacing:.01em;"
-                   onmouseover="this.style.background='#d4620a';this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 32px rgba(237,115,12,0.5)'"
-                   onmouseout="this.style.background='#ED730C';this.style.transform='translateY(0)';this.style.boxShadow='0 6px 24px rgba(237,115,12,0.45)'">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    List an Item
-                </a>
+                <div
+    @click="showPostModal = true"
+    style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#ED730C;color:#fff;font-size:0.9rem;font-weight:800;padding:14px 26px;border-radius:13px;cursor:pointer;text-decoration:none;transition:all .2s;box-shadow:0 6px 24px rgba(237,115,12,0.45);white-space:nowrap;letter-spacing:.01em;"
+    onmouseover="this.style.background='#d4620a';this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 32px rgba(237,115,12,0.5)'"
+    onmouseout="this.style.background='#ED730C';this.style.transform='translateY(0)';this.style.boxShadow='0 6px 24px rgba(237,115,12,0.45)'"
+>
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    List an Item
+</div>
                 <a href="/browse"
                    style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,255,255,0.1);color:#fff;font-size:0.9rem;font-weight:700;padding:14px 26px;border-radius:13px;text-decoration:none;transition:all .2s;border:1.5px solid rgba(255,255,255,0.2);white-space:nowrap;backdrop-filter:blur(8px);"
                    onmouseover="this.style.background='rgba(255,255,255,0.18)';this.style.transform='translateY(-2px)'"
@@ -575,6 +582,11 @@ function matchBadgeBg(pct) {
 
 </div><!-- end main grid -->
 </div><!-- end max-w container -->
+<PostItemModal
+    v-if="showPostModal"
+    @close="showPostModal = false"
+    @posted="showPostModal = false"
+/>
 </div>
 </template>
 

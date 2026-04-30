@@ -3,41 +3,60 @@
 namespace App\Http\Controllers\Pages;
 
 use App\Http\Controllers\Controller;
+use App\Models\Item;
+use App\Models\ItemImage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ItemController extends Controller
 {
-    public function show(Request $request, $id)
+    public function show($id)
     {
-        // ── Replace this stub with a real DB/model lookup when ready ──────────
-        $item = [
-            'id'             => $id,
-            'title'          => 'MacBook Pro 16" M2 Max (32GB RAM, 1TB SSD)',
-            'category'       => 'Electronics',
-            'condition'      => 'Mint Condition',
-            'value'          => 2450,
-            'distance'       => '12.4',
-            'description'    => 'Barely used MacBook Pro, purchased 6 months ago. Comes with original box, charger, and AppleCare+ until 2026.',
-            'promoted'       => true,
-            'image'          => 'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=800&q=80',
-            'images'         => [
-                'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=800&q=80',
-                'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&q=80',
-                'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&q=80',
-                'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&q=80',
-            ],
-            'owner_name'     => 'Marcus Chen',
-            'owner_username' => 'mchen_tech',
-            'owner_avatar'   => 'https://i.pravatar.cc/80?img=3',
-            'owner_rating'   => 4.7,
-            'wants_title'    => 'High-end Camera Gear',
-            'wants_desc'     => 'Sony A7 series or equivalent lens kits',
-            'wants_min'      => '2,200',
-            'wants_max'      => '2,600',
-            'match_score'    => 92,
-            'match_label'    => "Matches your 'Sony A7R IV' listing",
-        ];
-
+        $item = Item::with(['images', 'user'])->findOrFail($id);
         return view('pages.item', compact('item'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'title'           => ['required', 'string', 'max:255'],
+            'description'     => ['nullable', 'string'],
+            'category'        => ['required', 'string'],
+            'condition'       => ['required', 'in:new,like_new,good,fair'],
+            'location'        => ['nullable', 'string', 'max:255'],
+            'looking_for'     => ['nullable', 'string', 'max:255'],
+            'swap_conditions' => ['nullable', 'array'],
+            'images'          => ['nullable', 'array', 'max:5'],
+            'images.*'        => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ]);
+
+        $item = Item::create([
+            'user_id'         => Auth::id(),
+            'title'           => $validated['title'],
+            'description'     => $validated['description'] ?? null,
+            'category'        => $validated['category'],
+            'condition'       => $validated['condition'],
+            'location'        => Auth::user()->location ?? $validated['location'] ?? null,
+            'looking_for'     => $validated['looking_for'] ?? null,
+            'swap_conditions' => $validated['swap_conditions'] ?? [],
+            'status'          => 'active',
+        ]);
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $file) {
+                $path = $file->store('items', 'public');
+                ItemImage::create([
+                    'item_id'    => $item->id,
+                    'path'       => $path,
+                    'is_primary' => $index === 0,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'item'    => $item->load('images'),
+        ]);
     }
 }
