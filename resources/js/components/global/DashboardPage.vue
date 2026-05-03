@@ -99,7 +99,7 @@ function matchBadgeBg(pct) {
 </script>
 
 <template>
-<div style="min-height:100vh;background:#f3f4f6;font-family:'DM Sans',sans-serif;">
+<div style="min-height:100vh;background:#f3f4f6;font-family:'DM Sans',sans-serif;overflow-x:hidden;width:100%;">
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style="padding-top:28px;padding-bottom:72px;">
 
 <!-- ══════════════════════════════════════════════════════════════════
@@ -120,7 +120,7 @@ function matchBadgeBg(pct) {
     <div style="position:absolute;bottom:-28px;right:260px;font-size:7rem;opacity:0.025;color:#ED730C;pointer-events:none;user-select:none;line-height:1;">✦</div>
 
     <!-- Content -->
-    <div style="position:relative;z-index:1;padding:36px 40px;">
+    <div style="position:relative;z-index:1;padding:clamp(20px, 4vw, 36px) clamp(16px, 4vw, 40px);">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px;">
 
             <!-- Left: greeting + alerts -->
@@ -238,7 +238,7 @@ function matchBadgeBg(pct) {
 </div>
 
 <!-- ══ MAIN TWO-COLUMN GRID ══ -->
-<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;" class="main-grid">
+<div style="display:grid;grid-template-columns:1fr minmax(0,320px);gap:20px;align-items:start;" class="main-grid">
 
     <!-- ══ LEFT COLUMN ══ -->
     <div style="display:flex;flex-direction:column;gap:20px;">
@@ -639,7 +639,7 @@ function matchBadgeBg(pct) {
 .trend-card:hover .trend-img { transform: scale(1.06); }
 
 /* Responsive */
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
     .main-grid { grid-template-columns: 1fr !important; }
 }
 @media (max-width: 768px) {

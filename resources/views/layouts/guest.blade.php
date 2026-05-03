@@ -16,7 +16,7 @@
 
     @stack('head')
 </head>
-<body class="bg-gray-50 font-sans antialiased" style="color: #3A3330;">
+<body class="bg-gray-50 font-sans antialiased" style="color: #3A3330; overflow-x: hidden; max-width: 100vw;">
 
     {{-- ===== NAVIGATION — Blade partial, always renders, no Vue needed ===== --}}
     @include('partials.navigation')

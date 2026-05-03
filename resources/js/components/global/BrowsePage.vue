@@ -4,6 +4,10 @@ import { ref, computed } from 'vue'
 const el       = document.getElementById('browse-app')
 const allItems = ref(JSON.parse(el?.dataset.listings || '[]'))
 
+function parseDataset(key) {
+  try { return JSON.parse(el?.dataset[key] || '[]') } catch { return [] }
+}
+
 // ── filters ────────────────────────────────────────────────────────────────────
 const search       = ref('')
 const searchInput  = ref('')
@@ -30,36 +34,44 @@ function closeAllPanels() {
 }
 
 // ── featured swaps ─────────────────────────────────────────────────────────────
-const featuredItems = ref([
+const fakeFeaturedItems = [
   { id:'f1', badge:'Hot Swap',  badgeColor:'#ED730C', category:'Electronics', title:'iPhone 14 Pro Max 256GB', value:900,  match:98, owner:'Marcus C.', avatarColor:'#ED730C', image:'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&q=80' },
   { id:'f2', badge:'Trending',  badgeColor:'#8b5cf6', category:'Gaming',      title:'ASUS ROG Gaming Laptop',  value:1200, match:91, owner:'Juno K.',   avatarColor:'#8b5cf6', image:'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600&q=80' },
   { id:'f3', badge:'Verified',  badgeColor:'#2563eb', category:'Photography', title:'Sony A7 III Full Frame',  value:1800, match:88, owner:'Chris P.',  avatarColor:'#2563eb', image:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&q=80' },
   { id:'f4', badge:'New',       badgeColor:'#149189', category:'Home',        title:'Dyson V11 Vacuum',        value:320,  match:85, owner:'Sara J.',   avatarColor:'#f59e0b', image:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80' },
   { id:'f5', badge:'',          badgeColor:'',        category:'Fashion',     title:'Supreme Box Logo Hoodie', value:380,  match:82, owner:'Elena R.',  avatarColor:'#14b8a6', image:'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600&q=80' },
-])
+]
+const _realFeatured = parseDataset('featured')
+const featuredItems = ref(_realFeatured.length ? _realFeatured : fakeFeaturedItems)
 
 // ── near you ───────────────────────────────────────────────────────────────────
-const nearYouItems = ref([
+const fakeNearYouItems = [
   { id:'n1', category:'Electronics', title:'Vintage Mech Keyboard',    condition:'Like New', badge:'NEW',       badgeColor:'#1a1a1a', wants:'DSLR Camera or Studio Mic',   owner:'Marcus Chen', city:'Brooklyn, NY',    distance:'0.3 mi', image:'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=600&q=80' },
   { id:'n2', category:'Fashion',     title:'Leather Camera Bag',       condition:'Good',     badge:null,        badgeColor:'',        wants:'Hard-shell Travel Suitcase',  owner:'Elena Rossi',  city:'Queens, NY',      distance:'0.8 mi', image:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80' },
   { id:'n3', category:'Electronics', title:'Noise Cancel Headphones',  condition:'Like New', badge:'3-WAY',     badgeColor:'#149189', wants:'Graphic Tablet / iPad Air',   owner:'Liam Smith',   city:'Jersey City, NJ', distance:'1.2 mi', image:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80' },
   { id:'n4', category:'Home',        title:'Artisan Ceramic Set',      condition:'Mint',     badge:null,        badgeColor:'',        wants:'Outdoor Planter / Rug',       owner:'Sara Jenkins', city:'Manhattan, NY',   distance:'1.5 mi', image:'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80' },
   { id:'n5', category:'Collectibles',title:'Vinyl Records (50+)',      condition:'Good',     badge:null,        badgeColor:'',        wants:'Cassette Player',             owner:'Leo B.',       city:'Brooklyn, NY',    distance:'1.9 mi', image:'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=600&q=80' },
-])
+]
+const _realNearYou = parseDataset('nearYou')
+const nearYouItems = ref(_realNearYou.length ? _realNearYou : fakeNearYouItems)
 
 // ── trending ───────────────────────────────────────────────────────────────────
-const trendingItems = ref([
+const fakeTrendingItems = [
   { id:'t1', label:'TRENDING', badge:'HOT',  badgeColor:'#ED730C', title:'Minimalist Watch',      wants:'Headphones',   city:'Los Angeles, CA', image:'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80' },
   { id:'t2', label:'COMMUNITY',badge:'',     badgeColor:'',        title:'Rare Book Collection',  wants:'Vinyl Player', city:'Chicago, IL',     image:'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=200&q=80' },
   { id:'t3', label:'GEAR',     badge:'SWAP', badgeColor:'#149189', title:'Pro Gaming Mouse',      wants:'Desk Lamp',    city:'Seattle, WA',     image:'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=200&q=80' },
-])
+]
+const _realTrending = parseDataset('trending')
+const trendingItems = ref(_realTrending.length ? _realTrending : fakeTrendingItems)
 
 // ── today's picks ──────────────────────────────────────────────────────────────
-const todaysPicks = ref([
+const fakeTodaysPicks = [
   { id:'tp1', category:'Electronics', condition:'Like New', title:'iPad Pro 12.9" M2',        desc:'Barely used, with Apple Pencil and Magic Keyboard case.', value:950,  wants:'MacBook Air M2',    owner:'James K.',  avatar:'JK', avatarColor:'#6366f1', image:'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=600&q=80', match:94, badge:'Daily Pick', badgeColor:'#ED730C' },
   { id:'tp2', category:'Photography', condition:'Good',     title:'DJI Mavic 3 Drone',        desc:'Includes 3 batteries, controller, and carry case. Flown 12x.', value:1400, wants:'Sony Camera',    owner:'Priya M.', avatar:'PM', avatarColor:'#ec4899', image:'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=600&q=80', match:87, badge:'',           badgeColor:'' },
   { id:'tp3', category:'Outdoor',     condition:'Mint',     title:'Trek Mountain Bike 29"',   desc:'Carbon frame, Shimano gears, bought this year.', value:700,  wants:'Surfboard or Kayak', owner:'Alex R.',  avatar:'AR', avatarColor:'#22c55e', image:'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80', match:79, badge:'',           badgeColor:'' },
-])
+]
+const _realTodaysPicks = parseDataset('todaysPicks')
+const todaysPicks = ref(_realTodaysPicks.length ? _realTodaysPicks : fakeTodaysPicks)
 
 // ── main grid ──────────────────────────────────────────────────────────────────
 const mainGrid = ref([
@@ -189,8 +201,11 @@ async function loadMore() {
               {{ item.badge }}
             </span>
             <!-- Match badge -->
-            <span style="position:absolute;bottom:10px;left:10px;background:rgba(20,145,137,0.92);color:#fff;font-size:0.62rem;font-weight:800;padding:4px 9px;border-radius:6px;backdrop-filter:blur(4px);">
+            <span v-if="item.match !== null && !item.is_own" style="position:absolute;bottom:10px;left:10px;background:rgba(20,145,137,0.92);color:#fff;font-size:0.62rem;font-weight:800;padding:4px 9px;border-radius:6px;backdrop-filter:blur(4px);">
               {{ item.match }}% Match
+            </span>
+            <span v-else-if="item.is_own" style="position:absolute;bottom:10px;left:10px;background:rgba(26,26,26,0.75);color:#fff;font-size:0.62rem;font-weight:800;padding:4px 9px;border-radius:6px;backdrop-filter:blur(4px);">
+              Your Listing
             </span>
             <button @click.stop="toggleWish(item.id)" class="wish-btn"
               style="position:absolute;top:10px;right:10px;width:30px;height:30px;background:rgba(255,255,255,0.92);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;">
@@ -383,7 +398,8 @@ async function loadMore() {
                   <svg width="10" height="10" fill="white" viewBox="0 0 40 40"><path d="M28 8L38 14L28 20" stroke="white" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M38 14H14" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M12 32L2 26L12 20" stroke="white" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M2 26H26" stroke="white" stroke-width="4" stroke-linecap="round"/></svg>
                 </div>
               </div>
-              <span style="font-size:0.78rem;font-weight:700;color:#149189;">{{ item.match }}% Swap Potential</span>
+              <span v-if="item.match !== null && !item.is_own" style="font-size:0.78rem;font-weight:700;color:#149189;">{{ item.match }}% Swap Potential</span>
+              <span v-else-if="item.is_own" style="font-size:0.78rem;font-weight:700;color:#9ca3af;">Your Listing</span>
             </div>
 
             <!-- CTA -->
@@ -567,7 +583,8 @@ async function loadMore() {
                 <svg width="10" height="10" fill="white" viewBox="0 0 40 40"><path d="M28 8L38 14L28 20" stroke="white" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M38 14H14" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M12 32L2 26L12 20" stroke="white" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M2 26H26" stroke="white" stroke-width="4" stroke-linecap="round"/></svg>
               </div>
             </div>
-            <span v-if="item.match" style="font-size:0.78rem;font-weight:700;color:#149189;">{{ item.match }}% Swap Potential</span>
+            <span v-if="item.match !== null && !item.is_own" style="font-size:0.78rem;font-weight:700;color:#149189;">{{ item.match }}% Swap Potential</span>
+            <span v-else-if="item.is_own" style="font-size:0.78rem;font-weight:700;color:#9ca3af;">Your Listing</span>
             <span v-else style="font-size:0.78rem;color:#9ca3af;">{{ item.owner }}</span>
           </div>
 

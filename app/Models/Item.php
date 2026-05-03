@@ -10,18 +10,24 @@ class Item extends Model
         'user_id',
         'title',
         'description',
+        'estimated_value',
         'category',
         'condition',
         'location',
         'looking_for',
         'swap_conditions',
         'status',
+        'latitude',
+        'longitude',
     ];
 
     protected function casts(): array
     {
         return [
-            'swap_conditions' => 'array',
+            'swap_conditions'  => 'array',
+            'estimated_value'  => 'integer',
+            'latitude'  => 'float',
+            'longitude' => 'float',
         ];
     }
 
