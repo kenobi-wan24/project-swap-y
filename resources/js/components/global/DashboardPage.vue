@@ -1,652 +1,418 @@
 <script setup>
-// filepath: resources/js/components/global/DashboardPage.vue
 import { ref, computed } from 'vue'
-import PostItemModal from '../dashboard/PostItemModal.vue'
 
-const el          = document.getElementById('dashboard-app')
-const user        = ref(JSON.parse(el?.dataset.user        || '{}'))
-const stats       = ref(JSON.parse(el?.dataset.stats       || '[]'))
-const matches     = ref(JSON.parse(el?.dataset.matches     || '[]'))
-const swaps       = ref(JSON.parse(el?.dataset.swaps       || '[]'))
-const messages    = ref(JSON.parse(el?.dataset.messages    || '[]'))
-const credibility = ref(JSON.parse(el?.dataset.credibility || '{}'))
-const showPostModal = ref(false)
+const el   = document.getElementById('dashboard-app')
+function ds(key, fallback = '[]') {
+  try { return JSON.parse(el?.dataset[key] || fallback) } catch { return JSON.parse(fallback) }
+}
 
-// ── Fake data ─────────────────────────────────────────────────────────────────
-const fakeUser = { name: 'Alex Rivera', username: 'alex_r', email: 'alex@example.com', avatar: null }
-
-const fakeStats = [
-    { key: 'listings',     label: 'Active Listings',      value: '4',   accent: '#ED730C', bg: '#fff7ed', border: '#fed7aa' },
-    { key: 'swaps',        label: 'Completed Swaps',       value: '12',  accent: '#14b8a6', bg: '#f0fdf4', border: '#a7f3d0' },
-    { key: 'negotiations', label: 'Ongoing Negotiations',  value: '3',   accent: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe' },
-    { key: 'views',        label: 'Item Views Today',      value: '127', accent: '#f59e0b', bg: '#fffbeb', border: '#fde68a' },
-]
-
-const fakeMatches = [
-    { id: 1, title: 'Minimalist Chrono Watch', wants: 'Vintage Camera', match_percent: 94, distance: '1.2', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80', user: 'Jordan K.', initials: 'JK', user_color: '#14b8a6' },
-    { id: 2, title: 'Sony WH-1000XM4',         wants: 'Gaming Chair',   match_percent: 87, distance: '2.5', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80', user: 'Sarah L.',  initials: 'SL', user_color: '#ED730C' },
-    { id: 3, title: 'Canon EOS R6',             wants: 'MacBook Pro',    match_percent: 91, distance: '0.8', image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&q=80', user: 'Mike C.',   initials: 'MC', user_color: '#8b5cf6' },
-    { id: 4, title: 'Trek Mountain Bike',        wants: 'Drone',          match_percent: 78, distance: '3.1', image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400&q=80', user: 'Tiana R.',  initials: 'TR', user_color: '#f59e0b' },
-]
-
-const fakeSwapFeed = [
-    { id: 1, title: 'Air Jordan 1 Retro', category: 'Streetwear', distance: '0.8km', swapper: 'Marcus T.', initials: 'MT', color: '#14b8a6', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80' },
-    { id: 2, title: 'Fujica ST801 Film',  category: 'Tech',        distance: '2.4km', swapper: 'Elena S.',  initials: 'ES', color: '#ED730C', image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80' },
-    { id: 3, title: 'Minimalist Watch',   category: 'Accessories', distance: '1.1km', swapper: 'Jordan K.', initials: 'JK', color: '#8b5cf6', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80' },
-    { id: 4, title: 'Sony WH-1000XM4',   category: 'Electronics', distance: '3.2km', swapper: 'Sarah L.',  initials: 'SL', color: '#f59e0b', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80' },
-]
-
-const fakeSwaps = [
-    { id: 1, title: 'Your Watch → Canon Lens', status: 'pending',    status_text: 'Awaiting your response · 2h ago', cta: 'Respond Now', primary: true,  img_a: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=80', img_b: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80' },
-    { id: 2, title: 'MacBook → Sony Camera',   status: 'in_transit', status_text: 'Items shipped · Est. delivery Fri',  cta: 'Track',       primary: false, img_a: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=80', img_b: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80' },
-    { id: 3, title: 'Headphones → Keyboard',   status: 'completed',  status_text: 'Completed 3 days ago',              cta: 'Review',      primary: false, img_a: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=80', img_b: 'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=80' },
-]
-
-const fakeTrending = [
-    { id: 1, label: 'STREETWEAR',    count: '1.2k swaps', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=700&q=80' },
-    { id: 2, label: 'TECH',          count: '840 swaps',  image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=400&q=80' },
-    { id: 3, label: 'VINYL RECORDS', count: '320 swaps',  image: 'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=400&q=80' },
-    { id: 4, label: 'HOME DECOR',    count: '510 swaps',  image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=500&q=80' },
-]
-
-const fakeTopSwappers = [
-    { id: 1, rank: 1, name: 'Jordan K.', swaps: 42, image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80' },
-    { id: 2, rank: 2, name: 'Sarah L.',  swaps: 38, image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&q=80' },
-    { id: 3, rank: 3, name: 'Mike Chen', swaps: 35, image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80' },
-    { id: 4, rank: 4, name: 'Tiana R.',  swaps: 31, image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80' },
-    { id: 5, rank: 5, name: 'Chris V.',  swaps: 29, image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80' },
-]
-
-const fakeMessages = [
-    { id: 1, name: 'Marcus K.',   initials: 'MK', preview: 'Hey! Still interested in the lens swap?',      time: '2m',  unread: true,  color: '#14b8a6' },
-    { id: 2, name: 'Sarah L.',    initials: 'SL', preview: 'Deal confirmed ✓ Shipping tomorrow',            time: '1h',  unread: true,  color: '#ED730C' },
-    { id: 3, name: 'Julian D.',   initials: 'JD', preview: 'Thanks for the smooth swap!',                  time: '3h',  unread: false, color: '#8b5cf6' },
-    { id: 4, name: 'Anna W.',     initials: 'AW', preview: 'Can we do a partial value difference?',         time: '1d',  unread: false, color: '#f59e0b' },
-]
-
-const fakeCredibility = { score: 4.8, total_reviews: 28, verified: true, member_since: 'Jan 2024' }
-
-// Resolve
-const displayUser     = computed(() => Object.keys(user.value).length     ? user.value     : fakeUser)
-const displayStats    = computed(() => stats.value.length                 ? stats.value    : fakeStats)
-const displayMatches  = computed(() => matches.value.length               ? matches.value  : fakeMatches)
-const displayFeed     = computed(() => (matches.value.length ? matches.value : fakeSwapFeed).slice(0, 4))
-const displayMessages = computed(() => messages.value.length              ? messages.value : fakeMessages)
-
-const firstName    = computed(() => displayUser.value.name?.split(' ')[0] || 'Alex')
-const unreadCount  = computed(() => displayMessages.value.filter(m => m.unread).length)
-const pendingCount = computed(() => fakeSwaps.filter(s => s.status === 'pending').length)
-const strongMatchCount = computed(() => displayMatches.value.filter(m => m.match_percent >= 85).length)
-
-const greeting = computed(() => {
-    const h = new Date().getHours()
-    if (h < 12) return 'Good morning'
-    if (h < 18) return 'Good afternoon'
-    return 'Good evening'
+const user = ref(ds('user', '{}'))
+const firstName = computed(() => user.value.name?.split(' ')[0] || 'Alex')
+const greeting  = computed(() => {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
 })
 
-const statusConfig = {
-    pending:    { label: 'Pending',    bg: '#fff7ed', color: '#EA580C', border: '#fed7aa' },
-    in_transit: { label: 'In Transit', bg: '#e6f7f6', color: '#0d9488', border: '#99f6e4' },
-    completed:  { label: 'Completed',  bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
+const stats = [
+  { label:'Active Listings',  value:'8',   icon:'box',       color:'#ED730C', bg:'#FFF4EC' },
+  { label:'Completed Swaps',  value:'24',  icon:'swap',      color:'#149189', bg:'#EDFAF9' },
+  { label:'New Matches',      value:'12',  icon:'lightning', color:'#8b5cf6', bg:'#F5F3FF' },
+  { label:'Avg. Rating',      value:'4.9', icon:'star',      color:'#f59e0b', bg:'#FFFBEB' },
+]
+
+const quickActions = [
+  { label:'List an Item',      icon:'plus',   color:'#fff', bg:'#ED730C', href:'/listings/create'    },
+  { label:'Start Garage Sale', icon:'store',  color:'#fff', bg:'#149189', href:'/garage-sale/create' },
+  { label:'Offer a Service',   icon:'wrench', color:'#fff', bg:'#8b5cf6', href:'/services/create'    },
+  { label:'Smart Match',       icon:'zap',    color:'#fff', bg:'#f59e0b', href:'/matches'            },
+]
+
+const swapRequests = ref([
+  { id:'sr1', requester:'Marcus Chen',  avatar:'MC', avatarColor:'#ED730C', rating:4.8, myItem:'Vintage Camera',   theirItem:'Gaming Console',  myImage:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=120&q=80', theirImage:'https://images.unsplash.com/photo-1606318313647-135f3c3a7c11?w=120&q=80', time:'2h ago' },
+  { id:'sr2', requester:'Elena Rossi',  avatar:'ER', avatarColor:'#149189', rating:4.9, myItem:'Mech Keyboard',    theirItem:'Sony Headphones', myImage:'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=120&q=80', theirImage:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120&q=80', time:'5h ago' },
+  { id:'sr3', requester:'Liam Smith',   avatar:'LS', avatarColor:'#8b5cf6', rating:4.7, myItem:'Ceramic Vase Set', theirItem:'Leather Bag',     myImage:'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=120&q=80', theirImage:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=120&q=80', time:'1d ago'  },
+])
+
+const myListings = ref([
+  { id:'ml1', category:'Electronics', condition:'Like New', title:'iPhone 14 Pro Max 256GB', desc:'Excellent condition, unlocked, box included.',       value:900,  wants:'Gaming Laptop',     status:'active', views:124, image:'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&q=80' },
+  { id:'ml2', category:'Photography', condition:'Good',     title:'Sony A7 III Full Frame',  desc:'3k shutter count, kit lens and extra battery.',      value:1800, wants:'Canon R5 / Lenses', status:'active', views:89,  image:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&q=80' },
+  { id:'ml3', category:'Home',        condition:'Mint',     title:'Artisan Ceramic Set',     desc:'Handmade set of 6. No chips or cracks whatsoever.', value:220,  wants:'Outdoor Planter',   status:'paused', views:42,  image:'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80' },
+  { id:'ml4', category:'Fashion',     condition:'Good',     title:'Leather Camera Bag',      desc:'Fits mirrorless + 2 lenses. Genuine real leather.', value:180,  wants:'Travel Suitcase',   status:'active', views:67,  image:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80' },
+])
+
+const statusCfg = {
+  active:  { label:'Active',  color:'#149189', bg:'#EDFAF9' },
+  paused:  { label:'Paused',  color:'#9ca3af', bg:'#f3f4f6' },
+  pending: { label:'Pending', color:'#f59e0b', bg:'#FFFBEB' },
 }
 
-function matchBadgeBg(pct) {
-    if (pct >= 90) return { bg: '#14b8a6', shadow: 'rgba(20,184,166,0.35)' }
-    if (pct >= 80) return { bg: '#ED730C', shadow: 'rgba(237,115,12,0.35)' }
-    return { bg: '#6b7280', shadow: 'rgba(107,114,128,0.2)' }
-}
+const smartMatches = ref([
+  { id:'sm1', category:'Electronics', condition:'Like New', title:'MacBook Air M2',          desc:'Barely used. All original accessories included.',    value:1100, match:96, badge:'Top Match',  badgeColor:'#149189', owner:'Priya M.',  avatar:'PM', avatarColor:'#ec4899', location:'2.1 mi', image:'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&q=80' },
+  { id:'sm2', category:'Gaming',      condition:'Good',     title:'PlayStation 5 + 3 Games', desc:'Digital edition, 14 months old, great condition.',   value:480,  match:88, badge:'High Match', badgeColor:'#8b5cf6', owner:'James K.',  avatar:'JK', avatarColor:'#6366f1', location:'4.5 mi', image:'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=600&q=80' },
+  { id:'sm3', category:'Outdoor',     condition:'Mint',     title:'Trek MTB Carbon 29"',     desc:'Carbon frame, Shimano groupset, ridden ~200km.',     value:720,  match:81, badge:'',           badgeColor:'',        owner:'Alex R.',   avatar:'AR', avatarColor:'#22c55e', location:'1.8 mi', image:'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80' },
+  { id:'sm4', category:'Fashion',     condition:'Mint',     title:'Supreme FW22 Hoodie L',   desc:'Worn once. With tags. Rare colourway. Size L.',      value:360,  match:76, badge:'',           badgeColor:'',        owner:'Elena R.',  avatar:'ER', avatarColor:'#14b8a6', location:'6.2 mi', image:'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600&q=80' },
+])
+
+const messages = ref([
+  { id:'m1', name:'Marcus Chen', avatar:'MC', color:'#ED730C', preview:'"Hey! Still down to swap the keyboard?"',   time:'2m',  unread:true  },
+  { id:'m2', name:'Elena Rossi', avatar:'ER', color:'#149189', preview:'"Deal confirmed ✓ — shipping tomorrow"',    time:'1h',  unread:true  },
+  { id:'m3', name:'Priya Mehta', avatar:'PM', color:'#ec4899', preview:'"Can we meet at the usual spot on Sat?"',   time:'3h',  unread:false },
+  { id:'m4', name:'James Kim',   avatar:'JK', color:'#6366f1', preview:'"Thanks for the smooth swap 🙌"',           time:'1d',  unread:false },
+])
+
+const unreadCount = computed(() => messages.value.filter(m => m.unread).length)
+const wishlisted  = ref(new Set())
+function toggleWish(id) { const s=new Set(wishlisted.value); s.has(id)?s.delete(id):s.add(id); wishlisted.value=s }
+function acceptSwap(id)  { swapRequests.value = swapRequests.value.filter(r => r.id !== id) }
+function declineSwap(id) { swapRequests.value = swapRequests.value.filter(r => r.id !== id) }
+
+const activeSection = ref('overview')
+const navSections = [
+  { key:'overview', label:'Overview'    },
+  { key:'listings', label:'My Listings' },
+  { key:'swaps',    label:'Swaps'       },
+  { key:'messages', label:'Messages'    },
+  { key:'matches',  label:'Matches'     },
+]
 </script>
 
 <template>
-<div style="min-height:100vh;background:#f3f4f6;font-family:'DM Sans',sans-serif;overflow-x:hidden;width:100%;">
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style="padding-top:28px;padding-bottom:72px;">
+<div style="min-height:100vh;background:#FAF8F5;font-family:'DM Sans',sans-serif;">
 
-<!-- ══════════════════════════════════════════════════════════════════
-     HERO — strong gradient, editorial, high visual priority
-══════════════════════════════════════════════════════════════════ -->
-<div style="position:relative;border-radius:24px;overflow:hidden;margin-bottom:20px;min-height:220px;display:flex;flex-direction:column;justify-content:center;">
+  <!-- ══ HERO / WELCOME BANNER ══════════════════════════════════════════════ -->
+  <section style="position:relative;overflow:hidden;padding:52px 40px 44px;">
 
-    <!-- Layered gradient background — matches landing page language -->
-    <div style="position:absolute;inset:0;background:linear-gradient(135deg,#1c0d06 0%,#2e1309 35%,#0a2320 70%,#0d1f1d 100%);"></div>
-    <!-- Orange blob top-left -->
-    <div style="position:absolute;top:-60px;left:-40px;width:360px;height:360px;background:radial-gradient(circle,rgba(237,115,12,0.35) 0%,transparent 65%);pointer-events:none;"></div>
-    <!-- Teal blob bottom-right -->
-    <div style="position:absolute;bottom:-80px;right:80px;width:320px;height:320px;background:radial-gradient(circle,rgba(20,184,166,0.25) 0%,transparent 65%);pointer-events:none;"></div>
-    <!-- Subtle centre shine -->
-    <div style="position:absolute;top:10%;left:30%;width:500px;height:200px;background:radial-gradient(ellipse,rgba(255,255,255,0.04) 0%,transparent 70%);pointer-events:none;"></div>
-    <!-- Decorative ✦ watermark -->
-    <div style="position:absolute;top:-20px;right:48px;font-size:11rem;opacity:0.03;color:#fff;font-weight:900;pointer-events:none;user-select:none;line-height:1;">✦</div>
-    <div style="position:absolute;bottom:-28px;right:260px;font-size:7rem;opacity:0.025;color:#ED730C;pointer-events:none;user-select:none;line-height:1;">✦</div>
-
-    <!-- Content -->
-    <div style="position:relative;z-index:1;padding:clamp(20px, 4vw, 36px) clamp(16px, 4vw, 40px);">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px;">
-
-            <!-- Left: greeting + alerts -->
-            <div>
-                <p style="font-size:0.65rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:rgba(237,115,12,0.85);margin:0 0 10px;">Community Dashboard</p>
-                <h1 style="font-size:2.375rem;font-weight:900;color:#fff;margin:0 0 20px;line-height:1.08;letter-spacing:-.01em;">
-                    {{ greeting }}, <span style="color:#ED730C;">{{ firstName }}!</span>
-                </h1>
-
-                <!-- STATUS INDICATORS — clean icon-based blocks -->
-                <div style="display:flex;flex-wrap:wrap;gap:8px;">
-
-                    <!-- Strong matches -->
-                    <div v-if="strongMatchCount > 0" class="status-chip" style="display:inline-flex;align-items:center;gap:8px;background:rgba(20,184,166,0.12);border:1px solid rgba(20,184,166,0.25);border-radius:10px;padding:8px 14px;transition:all .2s;cursor:pointer;"
-                         onmouseover="this.style.background='rgba(20,184,166,0.2)'"
-                         onmouseout="this.style.background='rgba(20,184,166,0.12)'">
-                        <div style="width:28px;height:28px;border-radius:7px;background:rgba(20,184,166,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <svg width="14" height="14" fill="none" stroke="#14b8a6" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                        </div>
-                        <div>
-                            <p style="font-size:0.8rem;font-weight:800;color:#fff;margin:0;line-height:1.2;">{{ strongMatchCount }} strong matches</p>
-                            <p style="font-size:0.65rem;color:rgba(255,255,255,0.45);margin:0;">waiting for you</p>
-                        </div>
-                    </div>
-
-                    <!-- Pending swap requests -->
-                    <div v-if="pendingCount > 0" class="status-chip" style="display:inline-flex;align-items:center;gap:8px;background:rgba(237,115,12,0.12);border:1px solid rgba(237,115,12,0.25);border-radius:10px;padding:8px 14px;transition:all .2s;cursor:pointer;"
-                         onmouseover="this.style.background='rgba(237,115,12,0.2)'"
-                         onmouseout="this.style.background='rgba(237,115,12,0.12)'">
-                        <div style="width:28px;height:28px;border-radius:7px;background:rgba(237,115,12,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <svg width="14" height="14" fill="none" stroke="#ED730C" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                        </div>
-                        <div>
-                            <p style="font-size:0.8rem;font-weight:800;color:#fff;margin:0;line-height:1.2;">{{ pendingCount }} swap {{ pendingCount === 1 ? 'request' : 'requests' }}</p>
-                            <p style="font-size:0.65rem;color:rgba(255,255,255,0.45);margin:0;">needs your response</p>
-                        </div>
-                    </div>
-
-                    <!-- Unread messages -->
-                    <div v-if="unreadCount > 0" class="status-chip" style="display:inline-flex;align-items:center;gap:8px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.25);border-radius:10px;padding:8px 14px;transition:all .2s;cursor:pointer;"
-                         onmouseover="this.style.background='rgba(139,92,246,0.2)'"
-                         onmouseout="this.style.background='rgba(139,92,246,0.12)'">
-                        <div style="width:28px;height:28px;border-radius:7px;background:rgba(139,92,246,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <svg width="14" height="14" fill="none" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                        </div>
-                        <div>
-                            <p style="font-size:0.8rem;font-weight:800;color:#fff;margin:0;line-height:1.2;">{{ unreadCount }} unread messages</p>
-                            <p style="font-size:0.65rem;color:rgba(255,255,255,0.45);margin:0;">open messenger</p>
-                        </div>
-                    </div>
-
-                    <!-- Views -->
-                    <div class="status-chip" style="display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:8px 14px;transition:all .2s;cursor:pointer;"
-                         onmouseover="this.style.background='rgba(245,158,11,0.2)'"
-                         onmouseout="this.style.background='rgba(245,158,11,0.12)'">
-                        <div style="width:28px;height:28px;border-radius:7px;background:rgba(245,158,11,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <svg width="14" height="14" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </div>
-                        <div>
-                            <p style="font-size:0.8rem;font-weight:800;color:#fff;margin:0;line-height:1.2;">127 item views today</p>
-                            <p style="font-size:0.65rem;color:rgba(255,255,255,0.45);margin:0;">your listing is trending</p>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <!-- Right: CTAs -->
-            <div style="display:flex;flex-direction:column;gap:10px;flex-shrink:0;">
-                <div
-    @click="showPostModal = true"
-    style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#ED730C;color:#fff;font-size:0.9rem;font-weight:800;padding:14px 26px;border-radius:13px;cursor:pointer;text-decoration:none;transition:all .2s;box-shadow:0 6px 24px rgba(237,115,12,0.45);white-space:nowrap;letter-spacing:.01em;"
-    onmouseover="this.style.background='#d4620a';this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 32px rgba(237,115,12,0.5)'"
-    onmouseout="this.style.background='#ED730C';this.style.transform='translateY(0)';this.style.boxShadow='0 6px 24px rgba(237,115,12,0.45)'"
->
-    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <line x1="5" y1="12" x2="19" y2="12"/>
-    </svg>
-    List an Item
-</div>
-                <a href="/browse"
-                   style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,255,255,0.1);color:#fff;font-size:0.9rem;font-weight:700;padding:14px 26px;border-radius:13px;text-decoration:none;transition:all .2s;border:1.5px solid rgba(255,255,255,0.2);white-space:nowrap;backdrop-filter:blur(8px);"
-                   onmouseover="this.style.background='rgba(255,255,255,0.18)';this.style.transform='translateY(-2px)'"
-                   onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.transform='translateY(0)'">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                    Browse Items
-                </a>
-            </div>
-
-        </div>
+    <!-- BG image -->
+    <div style="position:absolute;inset:0;z-index:0;">
+      <img
+        src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1600&q=85"
+        alt=""
+        style="width:100%;height:100%;object-fit:cover;object-position:center 30%;"
+      >
+      <!-- Heavy left-side gradient, image peeks right -->
+      <div style="position:absolute;inset:0;background:linear-gradient(100deg,rgba(250,245,237,0.98) 0%,rgba(250,245,237,0.93) 52%,rgba(250,245,237,0.52) 100%);"></div>
+      <!-- Dot texture (matches Browse) -->
+      <div style="position:absolute;inset:0;background-image:radial-gradient(circle,rgba(237,115,12,0.055) 1px,transparent 1px);background-size:28px 28px;"></div>
     </div>
-</div>
 
-<!-- ══ STATS CARDS — accent borders, consistent icons, depth ══ -->
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;" class="stats-grid">
-    <div v-for="stat in displayStats" :key="stat.key" class="stat-card"
-         :style="{background:'#fff',borderRadius:'16px',padding:'20px 22px',borderLeft:`4px solid ${stat.accent}`,boxShadow:'0 1px 4px rgba(0,0,0,0.05)',display:'flex',alignItems:'center',gap:'16px',transition:'all .2s',cursor:'default'}">
-        <!-- Icon box -->
-        <div :style="{width:'48px',height:'48px',borderRadius:'13px',background:stat.bg,border:`1px solid ${stat.border}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}">
-            <!-- Listings icon -->
-            <svg v-if="stat.key==='listings'" width="20" height="20" fill="none" :stroke="stat.accent" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-            <!-- Swaps icon -->
-            <svg v-if="stat.key==='swaps'" width="20" height="20" fill="none" :stroke="stat.accent" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4"/></svg>
-            <!-- Negotiations icon -->
-            <svg v-if="stat.key==='negotiations'" width="20" height="20" fill="none" :stroke="stat.accent" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-            <!-- Views icon -->
-            <svg v-if="stat.key==='views'" width="20" height="20" fill="none" :stroke="stat.accent" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </div>
+    <div style="position:relative;z-index:1;max-width:1200px;margin:0 auto;">
+
+      <!-- Top row: greeting + profile pill -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:28px;">
         <div>
-            <p :style="{fontSize:'1.75rem',fontWeight:'900',color:'#1a1a1a',margin:'0',lineHeight:'1',letterSpacing:'-.01em'}">{{ stat.value }}</p>
-            <p style="font-size:0.72rem;color:#9ca3af;margin:4px 0 0;font-weight:500;line-height:1.3;">{{ stat.label }}</p>
+          <p style="font-size:0.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#ED730C;margin:0 0 6px;">{{ greeting }}</p>
+          <h1 style="font-size:clamp(1.9rem,3.5vw,2.75rem);font-weight:900;color:#1A1A1A;margin:0 0 8px;letter-spacing:-.03em;line-height:1.1;">
+            {{ firstName }},<br>ready to swap today?
+          </h1>
+          <p style="font-size:0.9rem;color:#5c5751;margin:0;max-width:420px;line-height:1.6;">
+            You have <strong style="color:#ED730C;">{{ swapRequests.length }} pending requests</strong> and
+            <strong style="color:#149189;">{{ smartMatches.length }} new AI matches</strong>.
+          </p>
         </div>
+
+        <!-- Notif + profile -->
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+          <button style="position:relative;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.85);backdrop-filter:blur(6px);border:1px solid rgba(237,232,224,0.8);box-shadow:0 2px 8px rgba(0,0,0,0.07);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+            <svg width="17" height="17" fill="none" stroke="#5c5751" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17H20L18.595 15.595A1 1 0 0118 14.806V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.806c0 .263-.1.52-.28.71L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            <span v-if="unreadCount>0" style="position:absolute;top:-2px;right:-2px;width:16px;height:16px;background:#ED730C;border-radius:50%;border:2px solid #FAF8F5;font-size:0.55rem;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;">{{ unreadCount }}</span>
+          </button>
+          <div style="display:flex;align-items:center;gap:9px;background:rgba(255,255,255,0.85);backdrop-filter:blur(6px);border:1px solid rgba(237,232,224,0.8);border-radius:999px;padding:5px 14px 5px 5px;box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+            <div style="width:30px;height:30px;border-radius:50%;background:#ED730C;color:#fff;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;">{{ firstName.charAt(0) }}</div>
+            <span style="font-size:0.82rem;font-weight:700;color:#1A1A1A;">{{ firstName }}</span>
+            <svg width="10" height="10" fill="#9ca3af" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;">
+        <div v-for="s in stats" :key="s.label"
+          style="background:rgba(255,255,255,0.82);backdrop-filter:blur(8px);border:1px solid rgba(237,232,224,0.7);border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+          <div :style="{width:'38px',height:'38px',borderRadius:'10px',background:s.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}">
+            <svg v-if="s.icon==='box'" width="17" height="17" fill="none" :stroke="s.color" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 10V11"/></svg>
+            <svg v-if="s.icon==='swap'" width="17" height="17" fill="none" :stroke="s.color" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+            <svg v-if="s.icon==='lightning'" width="17" height="17" :fill="s.color" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <svg v-if="s.icon==='star'" width="17" height="17" :fill="s.color" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </div>
+          <div>
+            <p style="font-size:1.25rem;font-weight:900;margin:0;line-height:1;" :style="{color:s.color}">{{ s.value }}</p>
+            <p style="font-size:0.72rem;font-weight:600;color:#9ca3af;margin:3px 0 0;white-space:nowrap;">{{ s.label }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div style="display:flex;flex-wrap:wrap;gap:10px;">
+        <a v-for="a in quickActions" :key="a.label" :href="a.href" class="qa-btn"
+          :style="{display:'inline-flex',alignItems:'center',gap:'8px',padding:'10px 20px',borderRadius:'999px',background:a.bg,color:a.color,fontSize:'0.82rem',fontWeight:'800',letterSpacing:'.02em',textDecoration:'none',fontFamily:'\'DM Sans\',sans-serif',boxShadow:`0 4px 14px ${a.bg}55`}">
+          <svg v-if="a.icon==='plus'"   width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg v-if="a.icon==='store'"  width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l1-5h16l1 5v1a2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2V9zm2 5v6h14v-6"/></svg>
+          <svg v-if="a.icon==='wrench'" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          <svg v-if="a.icon==='zap'"    width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          {{ a.label }}
+        </a>
+      </div>
     </div>
-</div>
+  </section>
 
-<!-- ══ MAIN TWO-COLUMN GRID ══ -->
-<div style="display:grid;grid-template-columns:1fr minmax(0,320px);gap:20px;align-items:start;" class="main-grid">
+  <!-- ══ SUB-NAV ═══════════════════════════════════════════════════════════ -->
+  <div style="background:#fff;border-bottom:1px solid #EDE8E0;padding:0 40px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+    <div style="max-width:1200px;margin:0 auto;display:flex;gap:0;">
+      <button v-for="s in navSections" :key="s.key" @click="activeSection=s.key"
+        :style="{padding:'13px 18px',background:'transparent',border:'none',borderBottom:activeSection===s.key?'2.5px solid #ED730C':'2.5px solid transparent',color:activeSection===s.key?'#ED730C':'#9ca3af',fontSize:'0.82rem',fontWeight:'700',cursor:'pointer',fontFamily:'\'DM Sans\',sans-serif',transition:'all .15s'}">
+        {{ s.label }}
+        <span v-if="s.key==='swaps'&&swapRequests.length" style="margin-left:6px;background:#ED730C;color:#fff;font-size:0.58rem;font-weight:800;padding:1px 6px;border-radius:999px;">{{ swapRequests.length }}</span>
+        <span v-if="s.key==='messages'&&unreadCount" style="margin-left:6px;background:#149189;color:#fff;font-size:0.58rem;font-weight:800;padding:1px 6px;border-radius:999px;">{{ unreadCount }}</span>
+      </button>
+    </div>
+  </div>
 
-    <!-- ══ LEFT COLUMN ══ -->
-    <div style="display:flex;flex-direction:column;gap:20px;">
+  <!-- ══ BODY ═══════════════════════════════════════════════════════════════ -->
+  <div style="max-width:1200px;margin:0 auto;padding:44px 40px 80px;">
 
-        <!-- ── TOP MATCHES ── -->
-        <div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,0.05);border:1px solid #f0f0ec;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <h2 style="font-size:1.0625rem;font-weight:800;color:#1a1a1a;margin:0;">Top Matches for You</h2>
-                    <span style="background:linear-gradient(135deg,#e6f7f6,#d1fae5);color:#14b8a6;font-size:0.6rem;font-weight:800;padding:3px 10px;border-radius:999px;letter-spacing:.07em;text-transform:uppercase;border:1px solid #a7f3d0;">AI Powered</span>
-                </div>
-                <a href="/browse" style="font-size:0.78rem;font-weight:700;color:#14b8a6;text-decoration:none;display:inline-flex;align-items:center;gap:3px;transition:color .15s;"
-                   onmouseover="this.style.color='#0d9488'" onmouseout="this.style.color='#14b8a6'">
-                    View All <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                </a>
-            </div>
-            <p style="font-size:0.78rem;color:#9ca3af;margin:0 0 18px;">Items our algorithm thinks you'll love based on your swap preferences</p>
-
-            <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:6px;" class="hide-scrollbar">
-                <div v-for="match in displayMatches" :key="match.id" class="match-card"
-                     style="flex-shrink:0;width:210px;border:1.5px solid #f0f0ec;border-radius:16px;overflow:hidden;cursor:pointer;background:#fff;transition:all .22s;">
-
-                    <div style="position:relative;aspect-ratio:4/3;overflow:hidden;background:#f5f5f0;">
-                        <img :src="match.image" :alt="match.title" class="match-img" style="width:100%;height:100%;object-fit:cover;transition:transform .35s;">
-                        <!-- Match % badge -->
-                        <div :style="{
-                            position:'absolute',top:'9px',right:'9px',
-                            background:matchBadgeBg(match.match_percent).bg,
-                            boxShadow:`0 3px 10px ${matchBadgeBg(match.match_percent).shadow}`,
-                            color:'#fff',fontSize:'0.62rem',fontWeight:'900',
-                            padding:'4px 9px',borderRadius:'8px',letterSpacing:'.04em'
-                        }">{{ match.match_percent }}% MATCH</div>
-                        <!-- Distance -->
-                        <div style="position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.62rem;font-weight:600;padding:3px 7px;border-radius:6px;backdrop-filter:blur(6px);display:inline-flex;align-items:center;gap:3px;">
-                            <svg width="9" height="9" fill="#fff" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
-                            {{ match.distance }} mi
-                        </div>
-                    </div>
-
-                    <div style="padding:12px 14px 14px;">
-                        <p style="font-size:0.875rem;font-weight:700;color:#1a1a1a;margin:0 0 3px;line-height:1.3;">{{ match.title }}</p>
-                        <p style="font-size:0.72rem;color:#9ca3af;margin:0 0 10px;">Wants: <strong style="color:#6b7280;">{{ match.wants }}</strong></p>
-                        <div style="display:flex;align-items:center;justify-content:space-between;">
-                            <div style="display:flex;align-items:center;gap:5px;">
-                                <div :style="{width:'20px',height:'20px',borderRadius:'50%',background:match.user_color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.5rem',fontWeight:'800',color:'#fff'}">{{ match.initials }}</div>
-                                <span style="font-size:0.72rem;color:#9ca3af;">{{ match.user }}</span>
-                            </div>
-                            <button class="swap-btn-sm" style="background:#14b8a6;color:#fff;font-size:0.7rem;font-weight:700;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;box-shadow:0 2px 8px rgba(20,184,166,0.3);">
-                                Swap
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- ── SWAP REQUESTS ── -->
+    <section style="margin-bottom:52px;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px;">
+        <div>
+          <p style="font-size:0.68rem;font-weight:800;letter-spacing:.12em;color:#ED730C;text-transform:uppercase;margin:0 0 4px;">Pending</p>
+          <h2 style="font-size:1.5rem;font-weight:900;color:#1A1A1A;margin:0;letter-spacing:-.02em;">
+            Swap Requests
+            <span style="font-size:0.75rem;font-weight:700;background:#FFF4EC;color:#ED730C;border-radius:999px;padding:3px 10px;margin-left:8px;vertical-align:middle;">{{ swapRequests.length }}</span>
+          </h2>
         </div>
+        <a href="/swap-requests" style="font-size:0.8rem;font-weight:700;color:#ED730C;text-decoration:none;">View all →</a>
+      </div>
 
-        <!-- ── YOUR SWAP FEED ── -->
-        <div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,0.05);border:1px solid #f0f0ec;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-                <h2 style="font-size:1.0625rem;font-weight:800;color:#1a1a1a;margin:0;">Your Swap Feed</h2>
-                <a href="/browse" style="font-size:0.78rem;font-weight:700;color:#14b8a6;text-decoration:none;display:inline-flex;align-items:center;gap:3px;transition:color .15s;"
-                   onmouseover="this.style.color='#0d9488'" onmouseout="this.style.color='#14b8a6'">
-                    View All <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                </a>
-            </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;">
+        <div v-for="req in swapRequests" :key="req.id" class="swapy-card"
+          style="background:#fff;border-radius:18px;border:1px solid #EDE8E0;box-shadow:0 4px 16px rgba(0,0,0,0.06);padding:18px 20px;">
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="feed-grid">
-                <div v-for="item in displayFeed" :key="item.id" class="feed-card"
-                     style="border:1.5px solid #f0f0ec;border-radius:16px;overflow:hidden;cursor:pointer;transition:all .22s;background:#fff;">
-                    <div style="position:relative;aspect-ratio:4/3;overflow:hidden;background:#f5f5f0;">
-                        <img :src="item.image" :alt="item.title" class="feed-img" style="width:100%;height:100%;object-fit:cover;transition:transform .35s;">
-                        <span style="position:absolute;top:10px;left:10px;background:rgba(255,255,255,0.92);color:#1a1a1a;font-size:0.62rem;font-weight:700;padding:4px 10px;border-radius:999px;backdrop-filter:blur(6px);letter-spacing:.03em;">{{ item.category }}</span>
-                    </div>
-                    <div style="padding:13px 14px 15px;">
-                        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-                            <h3 style="font-size:0.9rem;font-weight:700;color:#1a1a1a;margin:0;line-height:1.3;flex:1;">{{ item.title }}</h3>
-                            <span style="font-size:0.7rem;font-weight:700;color:#14b8a6;white-space:nowrap;margin-left:6px;margin-top:1px;">{{ item.distance }}</span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:5px;margin-bottom:11px;">
-                            <div :style="{width:'20px',height:'20px',borderRadius:'50%',background:item.color||'#ED730C',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.5rem',fontWeight:'700',color:'#fff',flexShrink:0}">{{ item.initials }}</div>
-                            <span style="font-size:0.73rem;color:#9ca3af;">Swapping by <strong style="color:#6b7280;">{{ item.swapper }}</strong></span>
-                        </div>
-                        <button class="offer-btn" style="width:100%;padding:9px;background:transparent;color:#ED730C;font-size:0.78rem;font-weight:700;border:1.5px solid #ED730C;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">
-                            Make an Offer
-                        </button>
-                    </div>
-                </div>
+          <!-- Items exchange -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div style="flex:1;text-align:center;">
+              <div style="width:64px;height:64px;border-radius:12px;overflow:hidden;background:#f3f4f6;margin:0 auto 5px;">
+                <img :src="req.myImage" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <p style="font-size:0.7rem;font-weight:700;color:#1A1A1A;margin:0;line-height:1.2;">{{ req.myItem }}</p>
+              <p style="font-size:0.62rem;color:#9ca3af;margin:2px 0 0;">Your item</p>
             </div>
+            <div style="flex-shrink:0;">
+              <svg width="30" height="30" viewBox="0 0 40 40" fill="none">
+                <path d="M28 8L38 14L28 20" stroke="#ED730C" stroke-width="3.5" stroke-linecap="round"/>
+                <path d="M38 14H10" stroke="#ED730C" stroke-width="3.5" stroke-linecap="round"/>
+                <path d="M12 32L2 26L12 20" stroke="#149189" stroke-width="3.5" stroke-linecap="round"/>
+                <path d="M2 26H30" stroke="#149189" stroke-width="3.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div style="flex:1;text-align:center;">
+              <div style="width:64px;height:64px;border-radius:12px;overflow:hidden;background:#f3f4f6;margin:0 auto 5px;">
+                <img :src="req.theirImage" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <p style="font-size:0.7rem;font-weight:700;color:#1A1A1A;margin:0;line-height:1.2;">{{ req.theirItem }}</p>
+              <p style="font-size:0.62rem;color:#9ca3af;margin:2px 0 0;">They offer</p>
+            </div>
+          </div>
+
+          <div style="height:1px;background:#f3f4f6;margin-bottom:12px;"></div>
+
+          <!-- Requester row -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:13px;">
+            <div :style="{width:'28px',height:'28px',borderRadius:'50%',background:req.avatarColor,color:'#fff',fontSize:'0.6rem',fontWeight:'800',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}">{{ req.avatar }}</div>
+            <div style="flex:1;">
+              <span style="font-size:0.82rem;font-weight:800;color:#1A1A1A;">{{ req.requester }}</span>
+              <span style="font-size:0.72rem;color:#6b7280;margin-left:6px;">wants your <strong style="color:#1A1A1A;">{{ req.myItem }}</strong></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;">
+              <svg width="10" height="10" fill="#f59e0b" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <span style="font-size:0.75rem;font-weight:700;color:#1A1A1A;">{{ req.rating }}</span>
+              <span style="font-size:0.67rem;color:#9ca3af;margin-left:4px;">{{ req.time }}</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display:flex;gap:8px;">
+            <button @click="acceptSwap(req.id)" class="btn-accept"
+              style="flex:1;padding:10px;background:#149189;color:#fff;border:none;border-radius:10px;font-size:0.8rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;">
+              Accept
+            </button>
+            <button @click="declineSwap(req.id)" class="btn-decline"
+              style="flex:1;padding:10px;background:#fff;color:#6b7280;border:1.5px solid #EDE8E0;border-radius:10px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+              Decline
+            </button>
+            <button class="btn-msg"
+              style="width:38px;height:38px;background:#f9f9f8;border:1.5px solid #EDE8E0;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+              <svg width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            </button>
+          </div>
         </div>
+      </div>
+    </section>
 
-        <!-- ── ACTIVE SWAPS ── -->
-        <div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,0.05);border:1px solid #f0f0ec;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-                <div>
-                    <h2 style="font-size:1.0625rem;font-weight:800;color:#1a1a1a;margin:0 0 3px;">Active Swaps</h2>
-                    <p style="font-size:0.75rem;color:#9ca3af;margin:0;">Your ongoing exchanges</p>
-                </div>
-                <a href="#" style="font-size:0.78rem;font-weight:600;color:#9ca3af;text-decoration:none;transition:color .15s;"
-                   onmouseover="this.style.color='#6b7280'" onmouseout="this.style.color='#9ca3af'">See all</a>
-            </div>
-
-            <div style="display:flex;flex-direction:column;gap:10px;">
-                <div v-for="swap in fakeSwaps" :key="swap.id" class="swap-row"
-                     style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #f0f0ec;border-radius:14px;transition:all .15s;cursor:pointer;">
-                    <!-- Image pair -->
-                    <div style="display:flex;align-items:center;flex-shrink:0;">
-                        <div style="width:44px;height:44px;border-radius:11px;overflow:hidden;border:2px solid #fff;box-shadow:0 0 0 1.5px #f0f0ec;">
-                            <img :src="swap.img_a" style="width:100%;height:100%;object-fit:cover;">
-                        </div>
-                        <div style="width:24px;height:24px;border-radius:50%;background:#f3f4f6;border:2px solid #fff;display:flex;align-items:center;justify-content:center;margin:0 -6px;z-index:1;box-shadow:0 0 0 1px #f0f0ec;">
-                            <svg width="9" height="9" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4"/></svg>
-                        </div>
-                        <div style="width:44px;height:44px;border-radius:11px;overflow:hidden;border:2px solid #fff;box-shadow:0 0 0 1.5px #f0f0ec;">
-                            <img :src="swap.img_b" style="width:100%;height:100%;object-fit:cover;">
-                        </div>
-                    </div>
-                    <!-- Details -->
-                    <div style="flex:1;min-width:0;">
-                        <p style="font-size:0.875rem;font-weight:700;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 0 3px;">{{ swap.title }}</p>
-                        <p style="font-size:0.72rem;color:#9ca3af;margin:0;">{{ swap.status_text }}</p>
-                    </div>
-                    <!-- Status + CTA -->
-                    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                        <span style="font-size:0.62rem;font-weight:700;padding:4px 10px;border-radius:8px;letter-spacing:.04em;text-transform:uppercase;border:1px solid;"
-                              :style="{background:statusConfig[swap.status]?.bg,color:statusConfig[swap.status]?.color,borderColor:statusConfig[swap.status]?.border}">
-                            {{ statusConfig[swap.status]?.label }}
-                        </span>
-                        <button v-if="swap.cta"
-                                style="font-size:0.75rem;font-weight:700;padding:8px 15px;border-radius:999px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap;"
-                                :style="{background:swap.primary?'#ED730C':'#f3f4f6',color:swap.primary?'#fff':'#3A3330',boxShadow:swap.primary?'0 3px 10px rgba(237,115,12,0.3)':'none'}"
-                                :onmouseover="swap.primary?`this.style.background='#d4620a';this.style.transform='translateY(-1px)'`:`this.style.background='#e5e7eb'`"
-                                :onmouseout="swap.primary?`this.style.background='#ED730C';this.style.transform='translateY(0)'`:`this.style.background='#f3f4f6'`">
-                            {{ swap.cta }}
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <!-- ── MY ACTIVE LISTINGS ── -->
+    <section style="margin-bottom:52px;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px;">
+        <div>
+          <p style="font-size:0.68rem;font-weight:800;letter-spacing:.12em;color:#9ca3af;text-transform:uppercase;margin:0 0 4px;">Your Items</p>
+          <h2 style="font-size:1.5rem;font-weight:900;color:#1A1A1A;margin:0;letter-spacing:-.02em;">My Active Listings</h2>
         </div>
-
-        <!-- ── TRENDING COLLECTIONS ── -->
-        <div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,0.05);border:1px solid #f0f0ec;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-                <h2 style="font-size:1.0625rem;font-weight:800;color:#1a1a1a;margin:0;">Trending Collections</h2>
-                <span style="background:#f0fdf4;color:#14b8a6;font-size:0.62rem;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.05em;text-transform:uppercase;border:1px solid #a7f3d0;">Updated Hourly</span>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-                <div style="grid-column:1/3;position:relative;border-radius:14px;overflow:hidden;aspect-ratio:2/1;cursor:pointer;" class="trend-card">
-                    <img :src="fakeTrending[0].image" style="width:100%;height:100%;object-fit:cover;transition:transform .4s;" class="trend-img">
-                    <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 55%);"></div>
-                    <div style="position:absolute;bottom:14px;left:16px;">
-                        <p style="font-size:0.9rem;font-weight:900;color:#fff;margin:0 0 2px;letter-spacing:.07em;text-transform:uppercase;">{{ fakeTrending[0].label }}</p>
-                        <p style="font-size:0.68rem;color:rgba(255,255,255,0.65);margin:0;">{{ fakeTrending[0].count }}</p>
-                    </div>
-                </div>
-                <div v-for="item in fakeTrending.slice(1,3)" :key="item.id"
-                     style="position:relative;border-radius:14px;overflow:hidden;aspect-ratio:1/1;cursor:pointer;" class="trend-card">
-                    <img :src="item.image" style="width:100%;height:100%;object-fit:cover;transition:transform .4s;" class="trend-img">
-                    <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 60%);"></div>
-                    <div style="position:absolute;bottom:10px;left:12px;">
-                        <p style="font-size:0.7rem;font-weight:900;color:#fff;margin:0 0 2px;letter-spacing:.06em;text-transform:uppercase;">{{ item.label }}</p>
-                        <p style="font-size:0.62rem;color:rgba(255,255,255,0.65);margin:0;">{{ item.count }}</p>
-                    </div>
-                </div>
-                <div style="grid-column:1/2;position:relative;border-radius:14px;overflow:hidden;aspect-ratio:4/3;cursor:pointer;" class="trend-card">
-                    <img :src="fakeTrending[3].image" style="width:100%;height:100%;object-fit:cover;transition:transform .4s;" class="trend-img">
-                    <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 55%);"></div>
-                    <div style="position:absolute;bottom:10px;left:12px;">
-                        <p style="font-size:0.7rem;font-weight:900;color:#fff;margin:0 0 2px;letter-spacing:.06em;text-transform:uppercase;">{{ fakeTrending[3].label }}</p>
-                        <p style="font-size:0.62rem;color:rgba(255,255,255,0.65);margin:0;">{{ fakeTrending[3].count }}</p>
-                    </div>
-                </div>
-            </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <a href="/listings" style="font-size:0.8rem;font-weight:700;color:#9ca3af;text-decoration:none;">View all →</a>
+          <a href="/listings/create" class="btn-addnew"
+            style="display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:#ED730C;color:#fff;border-radius:999px;font-size:0.8rem;font-weight:800;text-decoration:none;font-family:'DM Sans',sans-serif;box-shadow:0 4px 12px rgba(237,115,12,0.28);">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add New
+          </a>
         </div>
+      </div>
 
-        <!-- ── TOP SWAPPERS ── -->
-        <div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,0.05);border:1px solid #f0f0ec;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                <div>
-                    <h2 style="font-size:1.0625rem;font-weight:800;color:#1a1a1a;margin:0 0 3px;">Top Swappers This Month</h2>
-                    <p style="font-size:0.75rem;color:#9ca3af;margin:0;">Community MVPs leading the circular revolution.</p>
-                </div>
-                <button style="background:#f5f5f0;color:#14b8a6;font-size:0.75rem;font-weight:700;padding:8px 14px;border:1.5px solid #a7f3d0;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s;"
-                        onmouseover="this.style.background='#e6f7f6'" onmouseout="this.style.background='#f5f5f0'">
-                    View Rankings
-                </button>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:18px;">
+        <div v-for="item in myListings" :key="item.id" class="swapy-card"
+          style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;box-shadow:0 4px 18px rgba(0,0,0,0.07);display:flex;flex-direction:column;">
+
+          <div style="position:relative;aspect-ratio:4/3;overflow:hidden;background:#f3f4f6;flex-shrink:0;">
+            <img :src="item.image" :alt="item.title" class="card-img" style="width:100%;height:100%;object-fit:cover;transition:transform .4s;">
+            <span :style="{position:'absolute',top:'11px',left:'11px',background:statusCfg[item.status]?.bg,color:statusCfg[item.status]?.color,fontSize:'0.6rem',fontWeight:'800',padding:'4px 10px',borderRadius:'999px',letterSpacing:'.06em',textTransform:'uppercase',border:`1px solid ${statusCfg[item.status]?.color}44`}">
+              {{ statusCfg[item.status]?.label }}
+            </span>
+            <span style="position:absolute;top:11px;right:11px;background:rgba(0,0,0,0.42);backdrop-filter:blur(4px);color:#fff;font-size:0.62rem;font-weight:700;padding:3px 9px;border-radius:999px;display:flex;align-items:center;gap:3px;">
+              <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              {{ item.views }}
+            </span>
+          </div>
+
+          <div style="padding:15px 17px 17px;display:flex;flex-direction:column;flex:1;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;">
+              <span style="font-size:0.62rem;font-weight:800;letter-spacing:.08em;color:#9ca3af;text-transform:uppercase;">{{ item.category }}</span>
+              <span style="width:3px;height:3px;border-radius:50%;background:#d1d5db;display:inline-block;"></span>
+              <span style="font-size:0.62rem;font-weight:700;color:#149189;background:#EDFAF9;padding:2px 7px;border-radius:4px;">{{ item.condition }}</span>
             </div>
-            <div style="display:flex;justify-content:space-around;align-items:flex-end;padding:20px 0 8px;gap:10px;overflow-x:auto;" class="hide-scrollbar">
-                <div v-for="s in fakeTopSwappers" :key="s.id"
-                     style="display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;cursor:pointer;transition:transform .2s;"
-                     onmouseover="this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.transform='translateY(0)'">
-                    <div style="position:relative;">
-                        <div :style="{
-                            width: s.rank<=2?'64px':'56px', height: s.rank<=2?'64px':'56px',
-                            borderRadius:'50%', overflow:'hidden',
-                            border: s.rank===1?'3px solid #f59e0b':s.rank===2?'3px solid #9ca3af':'2px solid #f0f0ec',
-                            boxShadow: s.rank===1?'0 0 0 4px rgba(245,158,11,0.15)':'none',
-                        }">
-                            <img :src="s.image" :alt="s.name" style="width:100%;height:100%;object-fit:cover;">
-                        </div>
-                        <div :style="{
-                            position:'absolute', bottom:'-4px', right:'-4px',
-                            width:'22px', height:'22px', borderRadius:'50%',
-                            background: s.rank===1?'#f59e0b':s.rank===2?'#9ca3af':s.rank===3?'#cd7c2e':'#e5e7eb',
-                            border:'2.5px solid #fff',
-                            display:'flex', alignItems:'center', justifyContent:'center',
-                            fontSize:'0.6rem', fontWeight:'900', color:'#fff',
-                        }">{{ s.rank }}</div>
-                    </div>
-                    <div style="text-align:center;">
-                        <p style="font-size:0.8125rem;font-weight:700;color:#1a1a1a;margin:0 0 2px;">{{ s.name }}</p>
-                        <p style="font-size:0.72rem;color:#9ca3af;margin:0;">{{ s.swaps }} Swaps</p>
-                    </div>
-                </div>
+            <h3 style="font-size:0.9375rem;font-weight:800;color:#1A1A1A;line-height:1.3;margin:0 0 4px;">{{ item.title }}</h3>
+            <p style="font-size:0.78rem;color:#9ca3af;margin:0 0 10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;">{{ item.desc }}</p>
+            <div style="background:#FFF4EC;border-radius:8px;padding:6px 10px;margin-bottom:14px;flex:1;">
+              <p style="font-size:0.58rem;font-weight:800;letter-spacing:.07em;color:#c4a882;text-transform:uppercase;margin:0 0 1px;">Wants in exchange</p>
+              <p style="font-size:0.76rem;font-weight:700;color:#ED730C;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ item.wants }}</p>
             </div>
+            <div style="display:flex;gap:8px;">
+              <a :href="'/listings/'+item.id+'/edit'" class="btn-edit"
+                style="flex:1;text-align:center;padding:10px;background:#fff;color:#1A1A1A;border:1.5px solid #EDE8E0;border-radius:10px;font-size:0.78rem;font-weight:800;text-decoration:none;font-family:'DM Sans',sans-serif;display:block;">
+                Edit
+              </a>
+              <button class="btn-pause"
+                style="flex:1;padding:10px;background:#FAF8F5;color:#9ca3af;border:1.5px solid #EDE8E0;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+                {{ item.status==='paused' ? 'Resume' : 'Pause' }}
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
+    </section>
 
-    </div><!-- end left column -->
-
-    <!-- ══ RIGHT SIDEBAR ══ -->
-    <div style="display:flex;flex-direction:column;gap:16px;">
-
-        <!-- Messages -->
-        <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.05);border:1px solid #f0f0ec;">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 18px 0;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                    <h3 style="font-size:1.0625rem;font-weight:800;color:#1a1a1a;margin:0;">Messages</h3>
-                    <span v-if="unreadCount>0"
-                          style="background:#ED730C;color:#fff;font-size:0.6rem;font-weight:800;min-width:20px;height:20px;padding:0 5px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(237,115,12,0.35);">
-                        {{ unreadCount }}
-                    </span>
-                </div>
-                <a href="#" style="font-size:0.72rem;font-weight:600;color:#9ca3af;text-decoration:none;margin-bottom:14px;">See all</a>
-            </div>
-
-            <!-- Unread highlight bar -->
-            <div v-if="unreadCount>0" style="margin:0 14px 12px;background:linear-gradient(135deg,#fff7ed,#fef3c7);border:1px solid #fed7aa;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px;">
-                <svg width="14" height="14" fill="none" stroke="#ED730C" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <p style="font-size:0.78rem;font-weight:700;color:#EA580C;margin:0;">{{ unreadCount }} new messages waiting for you</p>
-            </div>
-
-            <div v-for="msg in displayMessages" :key="msg.id"
-                 style="display:flex;align-items:center;gap:10px;padding:10px 18px;cursor:pointer;transition:background .12s;border-top:1px solid #f9fafb;"
-                 onmouseover="this.style.background='#fafaf8'" onmouseout="this.style.background='transparent'">
-                <div style="position:relative;flex-shrink:0;">
-                    <div :style="{width:'38px',height:'38px',borderRadius:'50%',background:msg.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.7rem',fontWeight:'800',color:'#fff'}">
-                        {{ msg.initials }}
-                    </div>
-                    <div v-if="msg.unread" style="position:absolute;bottom:0;right:0;width:11px;height:11px;background:#ED730C;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(237,115,12,0.2);"></div>
-                </div>
-                <div style="flex:1;min-width:0;">
-                    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:4px;margin-bottom:2px;">
-                        <p :style="{fontSize:'0.8125rem',fontWeight:msg.unread?'700':'600',color:'#1a1a1a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',margin:0}">{{ msg.name }}</p>
-                        <span style="font-size:0.65rem;color:#c4c9d4;flex-shrink:0;">{{ msg.time }}</span>
-                    </div>
-                    <p :style="{fontSize:'0.73rem',color:msg.unread?'#6b7280':'#9ca3af',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',fontWeight:msg.unread?'500':'400',margin:0}">{{ msg.preview }}</p>
-                </div>
-            </div>
-
-            <div style="padding:12px 18px;border-top:1px solid #f5f5f0;">
-                <a href="#" style="display:block;text-align:center;font-size:0.75rem;font-weight:700;color:#14b8a6;text-decoration:none;letter-spacing:.05em;text-transform:uppercase;padding:9px;border-radius:9px;transition:background .12s;"
-                   onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
-                    Open Messenger →
-                </a>
-            </div>
+    <!-- ── SMART MATCHES ── -->
+    <section style="margin-bottom:52px;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px;">
+        <div>
+          <p style="font-size:0.68rem;font-weight:800;letter-spacing:.12em;color:#149189;text-transform:uppercase;margin:0 0 4px;">AI Matchmaker</p>
+          <h2 style="font-size:1.5rem;font-weight:900;color:#1A1A1A;margin:0;letter-spacing:-.02em;">Your Top Matches</h2>
         </div>
+        <a href="/matches" style="font-size:0.8rem;font-weight:700;color:#ED730C;text-decoration:none;">See all →</a>
+      </div>
 
-        <!-- Swap Score card — dark premium -->
-        <div style="background:linear-gradient(135deg,#1a0f0a 0%,#2d1810 50%,#0d1f1d 100%);border-radius:20px;padding:22px;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.15);">
-            <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;background:radial-gradient(circle,rgba(237,115,12,0.2) 0%,transparent 70%);pointer-events:none;"></div>
-            <div style="position:absolute;bottom:-40px;left:-20px;width:120px;height:120px;background:radial-gradient(circle,rgba(20,184,166,0.15) 0%,transparent 70%);pointer-events:none;"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:18px;">
+        <div v-for="item in smartMatches" :key="item.id" class="swapy-card"
+          style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;box-shadow:0 4px 18px rgba(0,0,0,0.07);display:flex;flex-direction:column;">
 
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;position:relative;z-index:1;">
-                <p style="font-size:0.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin:0;">Swap Score</p>
-                <a href="#" style="font-size:0.68rem;color:rgba(255,255,255,0.3);text-decoration:none;transition:color .15s;"
-                   onmouseover="this.style.color='rgba(255,255,255,0.65)'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">View profile →</a>
+          <div style="position:relative;aspect-ratio:4/3;overflow:hidden;background:#f3f4f6;flex-shrink:0;">
+            <img :src="item.image" :alt="item.title" class="card-img" style="width:100%;height:100%;object-fit:cover;transition:transform .4s;">
+            <span v-if="item.badge" :style="{position:'absolute',top:'11px',left:'11px',background:item.badgeColor,color:'#fff',fontSize:'0.6rem',fontWeight:'800',padding:'4px 10px',borderRadius:'999px',letterSpacing:'.06em',textTransform:'uppercase'}">{{ item.badge }}</span>
+            <div style="position:absolute;top:11px;right:11px;background:rgba(20,145,137,0.88);backdrop-filter:blur(4px);color:#fff;font-size:0.68rem;font-weight:900;padding:4px 10px;border-radius:999px;">{{ item.match }}% match</div>
+            <button @click.stop="toggleWish(item.id)" class="wish-btn"
+              style="position:absolute;bottom:10px;right:10px;width:30px;height:30px;background:rgba(255,255,255,0.88);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.10);">
+              <svg :style="{width:'13px',height:'13px',fill:wishlisted.has(item.id)?'#ED730C':'none',stroke:wishlisted.has(item.id)?'#ED730C':'#6b7280',strokeWidth:'2'}" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            </button>
+          </div>
+
+          <div style="padding:15px 17px 17px;display:flex;flex-direction:column;flex:1;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;">
+              <span style="font-size:0.62rem;font-weight:800;letter-spacing:.08em;color:#9ca3af;text-transform:uppercase;">{{ item.category }}</span>
+              <span style="width:3px;height:3px;border-radius:50%;background:#d1d5db;display:inline-block;"></span>
+              <span style="font-size:0.62rem;font-weight:700;color:#149189;background:#EDFAF9;padding:2px 7px;border-radius:4px;">{{ item.condition }}</span>
             </div>
-
-            <div style="display:flex;align-items:center;gap:16px;position:relative;z-index:1;">
-                <svg width="68" height="68" style="transform:rotate(-90deg);flex-shrink:0;">
-                    <circle cx="34" cy="34" r="28" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5"/>
-                    <circle cx="34" cy="34" r="28" fill="none" stroke="#ED730C" stroke-width="5"
-                            stroke-dasharray="141.4 175.9"
-                            stroke-linecap="round"/>
-                </svg>
-                <div>
-                    <p style="font-size:2.25rem;font-weight:900;color:#fff;line-height:1;margin:0 0 5px;">4.8</p>
-                    <div style="display:flex;gap:2px;margin-bottom:6px;">
-                        <template v-for="i in 5" :key="i">
-                            <svg width="13" height="13" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" :fill="i<=4?'#ED730C':'rgba(255,255,255,0.12)'"/></svg>
-                        </template>
-                    </div>
-                    <p style="font-size:0.72rem;color:rgba(255,255,255,0.4);margin:0;"><strong style="color:#ED730C;">3</strong> swaps this month</p>
+            <h3 style="font-size:0.9375rem;font-weight:800;color:#1A1A1A;line-height:1.3;margin:0 0 4px;">{{ item.title }}</h3>
+            <p style="font-size:0.78rem;color:#9ca3af;margin:0 0 12px;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;">{{ item.desc }}</p>
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:13px;padding-top:10px;border-top:1px solid #f3f4f6;">
+              <div style="position:relative;width:34px;height:24px;flex-shrink:0;">
+                <div :style="{width:'24px',height:'24px',borderRadius:'50%',background:item.avatarColor,color:'#fff',fontSize:'0.58rem',fontWeight:'800',display:'flex',alignItems:'center',justifyContent:'center',position:'absolute',left:'0',zIndex:2,border:'1.5px solid #fff'}">{{ item.avatar }}</div>
+                <div style="width:22px;height:22px;border-radius:50%;background:#149189;display:flex;align-items:center;justify-content:center;position:absolute;left:12px;z-index:1;border:1.5px solid #fff;">
+                  <svg width="9" height="9" viewBox="0 0 40 40" fill="none"><path d="M28 8L38 14L28 20" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M38 14H10" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M12 32L2 26L12 20" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M2 26H30" stroke="white" stroke-width="4" stroke-linecap="round"/></svg>
                 </div>
+              </div>
+              <span style="font-size:0.78rem;font-weight:600;color:#149189;flex:1;">{{ item.owner }}</span>
+              <span style="font-size:0.72rem;color:#9ca3af;display:flex;align-items:center;gap:3px;">
+                <svg width="9" height="9" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+                {{ item.location }}
+              </span>
             </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:18px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.07);position:relative;z-index:1;">
-                <div style="text-align:center;padding:4px 0;">
-                    <p style="font-size:1.375rem;font-weight:900;color:#fff;margin:0 0 2px;">28</p>
-                    <p style="font-size:0.62rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.07em;margin:0;">Reviews</p>
-                </div>
-                <div style="text-align:center;padding:4px 0;border-left:1px solid rgba(255,255,255,0.07);">
-                    <p style="font-size:1.375rem;font-weight:900;color:#14b8a6;margin:0 0 2px;">98%</p>
-                    <p style="font-size:0.62rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.07em;margin:0;">Response</p>
-                </div>
-            </div>
+            <a :href="'/item/'+item.id" class="swap-btn"
+              style="display:block;text-align:center;background:#ED730C;color:#fff;font-size:0.82rem;font-weight:800;padding:11px;border-radius:999px;text-decoration:none;letter-spacing:.03em;font-family:'DM Sans',sans-serif;box-shadow:0 4px 12px rgba(237,115,12,0.28);">
+              Contact Swapper
+            </a>
+          </div>
         </div>
+      </div>
+    </section>
 
-        <!-- Quick Actions -->
-        <div style="background:#fff;border-radius:20px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,0.05);border:1px solid #f0f0ec;">
-            <p style="font-size:0.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;margin:0 0 12px;">Quick Actions</p>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-                <a href="#" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fff7ed;border-radius:12px;text-decoration:none;border:1.5px solid #fed7aa;transition:all .15s;"
-                   onmouseover="this.style.background='#ffedd5';this.style.transform='translateX(2px)'" onmouseout="this.style.background='#fff7ed';this.style.transform='translateX(0)'">
-                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(237,115,12,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <svg width="15" height="15" fill="none" stroke="#ED730C" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    </div>
-                    <span style="font-size:0.845rem;font-weight:700;color:#EA580C;">Post New Item</span>
-                    <svg style="margin-left:auto;" width="13" height="13" fill="none" stroke="#ED730C" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                </a>
-                <a href="/services" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#f0fdf4;border-radius:12px;text-decoration:none;border:1.5px solid #a7f3d0;transition:all .15s;"
-                   onmouseover="this.style.background='#dcfce7';this.style.transform='translateX(2px)'" onmouseout="this.style.background='#f0fdf4';this.style.transform='translateX(0)'">
-                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(20,184,166,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <svg width="15" height="15" fill="none" stroke="#14b8a6" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4"/></svg>
-                    </div>
-                    <span style="font-size:0.845rem;font-weight:700;color:#0d9488;">Offer a Service</span>
-                    <svg style="margin-left:auto;" width="13" height="13" fill="none" stroke="#14b8a6" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                </a>
-                <a href="/garage-sale" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#f5f5f0;border-radius:12px;text-decoration:none;border:1.5px solid #e5e7eb;transition:all .15s;"
-                   onmouseover="this.style.background='#e5e7eb';this.style.transform='translateX(2px)'" onmouseout="this.style.background='#f5f5f0';this.style.transform='translateX(0)'">
-                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(107,114,128,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <svg width="15" height="15" fill="none" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-                    </div>
-                    <span style="font-size:0.845rem;font-weight:700;color:#6b7280;">My Garage Sale</span>
-                    <svg style="margin-left:auto;" width="13" height="13" fill="none" stroke="#9ca3af" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                </a>
-            </div>
+    <!-- ── MESSAGES ── -->
+    <section>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px;">
+        <div>
+          <p style="font-size:0.68rem;font-weight:800;letter-spacing:.12em;color:#9ca3af;text-transform:uppercase;margin:0 0 4px;">Inbox</p>
+          <h2 style="font-size:1.5rem;font-weight:900;color:#1A1A1A;margin:0;letter-spacing:-.02em;">Recent Messages</h2>
         </div>
+        <a href="/messages" style="font-size:0.8rem;font-weight:700;color:#ED730C;text-decoration:none;">Open all →</a>
+      </div>
 
-    </div><!-- end sidebar -->
+      <div style="background:#fff;border-radius:20px;border:1px solid #EDE8E0;box-shadow:0 4px 18px rgba(0,0,0,0.06);overflow:hidden;">
+        <div v-for="(msg,i) in messages" :key="msg.id" class="msg-row"
+          :style="{display:'flex',alignItems:'center',gap:'13px',padding:'15px 20px',cursor:'pointer',borderBottom:i<messages.length-1?'1px solid #f3f4f6':'none'}">
+          <div :style="{width:'40px',height:'40px',borderRadius:'50%',background:msg.color,color:'#fff',fontSize:'0.75rem',fontWeight:'800',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}">{{ msg.avatar }}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+              <span style="font-size:0.875rem;font-weight:800;color:#1A1A1A;">{{ msg.name }}</span>
+              <span v-if="msg.unread" style="width:7px;height:7px;border-radius:50%;background:#ED730C;flex-shrink:0;"></span>
+            </div>
+            <p style="font-size:0.8rem;color:#6b7280;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ msg.preview }}</p>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+            <span :style="{fontSize:'0.68rem',fontWeight:'700',color:msg.unread?'#ED730C':'#9ca3af'}">{{ msg.time }}</span>
+            <svg width="12" height="12" fill="none" stroke="#d1d5db" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+    </section>
 
-</div><!-- end main grid -->
-</div><!-- end max-w container -->
-<PostItemModal
-    v-if="showPostModal"
-    @close="showPostModal = false"
-    @posted="showPostModal = false"
-/>
+  </div>
 </div>
 </template>
 
-<style>
-/* Scrollbar */
-.hide-scrollbar::-webkit-scrollbar { display: none; }
-.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Stat card hover */
-.stat-card:hover {
-    transform: translateY(-3px) !important;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
-}
-
-/* Match card hover */
-.match-card:hover {
-    border-color: #14b8a6 !important;
-    box-shadow: 0 8px 28px rgba(20,184,166,0.14) !important;
-    transform: translateY(-3px);
-}
-.match-card:hover .match-img { transform: scale(1.05); }
-
-/* Feed card hover */
-.feed-card:hover {
-    border-color: #ED730C !important;
-    box-shadow: 0 8px 28px rgba(237,115,12,0.1) !important;
-    transform: translateY(-3px);
-}
-.feed-card:hover .feed-img { transform: scale(1.05); }
-
-/* Offer button hover */
-.offer-btn:hover {
-    background: #ED730C !important;
-    color: #fff !important;
-}
-
-/* Swap button */
-.swap-btn-sm:hover {
-    background: #0d9488 !important;
-    transform: translateY(-1px);
-}
-
-/* Swap row hover */
-.swap-row:hover {
-    border-color: #e5e7eb !important;
-    background: #fafafa !important;
-}
-
-/* Trend card hover */
-.trend-card:hover .trend-img { transform: scale(1.06); }
-
-/* Responsive */
-@media (max-width: 1200px) {
-    .main-grid { grid-template-columns: 1fr !important; }
-}
-@media (max-width: 768px) {
-    .stats-grid { grid-template-columns: repeat(2,1fr) !important; }
-    .feed-grid  { grid-template-columns: 1fr !important; }
-}
-@media (max-width: 480px) {
-    .stats-grid { grid-template-columns: 1fr !important; }
-}
+<style scoped>
+.swapy-card { transition: border-color .2s, box-shadow .2s, transform .2s; }
+.swapy-card:hover { border-color:#ED730C !important; box-shadow:0 10px 36px rgba(237,115,12,0.12) !important; transform:translateY(-3px); }
+.swapy-card:hover .card-img { transform:scale(1.06); }
+.qa-btn { transition:all .18s; }
+.qa-btn:hover { transform:translateY(-2px); filter:brightness(1.08); }
+.wish-btn { transition:transform .15s; }
+.wish-btn:hover { transform:scale(1.2); }
+.swap-btn:hover { background:#d4620a !important; box-shadow:0 6px 18px rgba(237,115,12,0.40) !important; transform:translateY(-1px); }
+.btn-accept { transition:background .15s; }
+.btn-accept:hover { background:#0f7068 !important; }
+.btn-decline:hover { border-color:#dc2626 !important; color:#dc2626 !important; }
+.btn-msg:hover { border-color:#ED730C !important; }
+.btn-addnew { transition:all .15s; }
+.btn-addnew:hover { background:#d4620a !important; }
+.btn-edit:hover { border-color:#1A1A1A !important; }
+.btn-pause:hover { color:#ED730C !important; border-color:#ED730C !important; }
+.msg-row { transition:background .15s; }
+.msg-row:hover { background:#FAF8F5 !important; }
 </style>
