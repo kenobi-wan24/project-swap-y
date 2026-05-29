@@ -132,7 +132,7 @@ class BrowseController extends Controller
     // [50pts] Mutual swap intent — Item owner wants something that matches your item's title/category, AND you want something that matches their item's title/category
     // [30pts] Mutual = full 50, one-sided = 25pts (partial credit if only one direction matches)
     // [30pts] Category preference — item's category is in your preferred categories
-    // [20pts] Value range — item's estimated value fits your min/max
+    // [20pts] Value range — item's estimated value fits your min/max 
     // ─────────────────────────────────────────────────────────────────────────
     private function computeMatch(Item $item, $pref, $myItems): int
 {

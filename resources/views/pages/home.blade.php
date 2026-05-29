@@ -1,4 +1,3 @@
-
 @extends('layouts.guest')
 @section('title', 'SWAPY - Swap Anything. Zero Cash Needed.')
 
@@ -7,7 +6,7 @@
 {{-- =========================================================
     HERO SECTION - Adjusted card positions & fixed images
 ========================================================= --}}
-<section class="relative flex items-center overflow-hidden py-20">
+<section class="relative flex items-center overflow-hidden py-20" style="isolation: isolate;">
     
     {{-- Multi-layer animated background with blur circles --}}
     <div class="absolute inset-0">
@@ -504,4 +503,3 @@
 </section>
 
 @endsection
-
