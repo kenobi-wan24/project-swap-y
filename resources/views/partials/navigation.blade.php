@@ -96,6 +96,23 @@
         opacity: 0;
     }
 
+    /* ── PILL SEPARATORS (only visible in scrolled/pill mode) ── */
+    #nav-pill .nav-link + .nav-link::before {
+        content: '';
+        position: absolute;
+        left: -3px;
+        top: 20%;
+        height: 60%;
+        width: 1px;
+        background-color: #e5e7eb;
+        border-radius: 1px;
+        opacity: 0;
+        transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #main-header.scrolled #nav-pill .nav-link + .nav-link::before {
+        opacity: 1;
+    }
+
     /* ── MOBILE NAV LINK ── */
     .nav-link-mobile {
         display: flex;
@@ -153,7 +170,7 @@
     /* ── HEADER ── */
     #main-header {
         background: #fff;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid #e5e7eb;
         position: sticky;
         top: 0;
         z-index: 50;
@@ -167,7 +184,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        height: 68px;
+        height: 80px;
         max-width: 80rem;
         margin: 0 auto;
         padding: 0 2rem;
@@ -180,7 +197,6 @@
         gap: 4px;
         padding: 0 6px;
         border-radius: 999px;
-        /* fixed min-width prevents pill from collapsing while labels animate out */
         min-width: 180px;
         justify-content: center;
         transition:
