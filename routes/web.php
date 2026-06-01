@@ -23,7 +23,7 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 // Public routes
-Route::get('/',              [HomeController::class,       'index'])->name('home');
+Route::get('/', fn() => redirect()->route('browse'))->name('home');
 Route::get('/browse',        [BrowseController::class,     'index'])->name('browse');
 Route::get('/garage-sale',   [GarageSaleController::class, 'index'])->name('garage-sale');
 Route::get('/services',      [ServicesController::class,   'index'])->name('services');
