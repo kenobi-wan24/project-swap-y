@@ -35,22 +35,22 @@ function closeAllPanels() {
 
 // ── featured swaps ─────────────────────────────────────────────────────────────
 const fakeFeaturedItems = [
-  { id:'f1', badge:'Hot Swap',  badgeColor:'#ED730C', category:'Electronics', title:'iPhone 14 Pro Max 256GB', value:900,  match:98, owner:'Marcus C.', avatarColor:'#ED730C', image:'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&q=80' },
-  { id:'f2', badge:'Trending',  badgeColor:'#8b5cf6', category:'Gaming',      title:'ASUS ROG Gaming Laptop',  value:1200, match:91, owner:'Juno K.',   avatarColor:'#8b5cf6', image:'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600&q=80' },
-  { id:'f3', badge:'Verified',  badgeColor:'#2563eb', category:'Photography', title:'Sony A7 III Full Frame',  value:1800, match:88, owner:'Chris P.',  avatarColor:'#2563eb', image:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&q=80' },
-  { id:'f4', badge:'New',       badgeColor:'#149189', category:'Home',        title:'Dyson V11 Vacuum',        value:320,  match:85, owner:'Sara J.',   avatarColor:'#f59e0b', image:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80' },
-  { id:'f5', badge:'',          badgeColor:'',        category:'Fashion',     title:'Supreme Box Logo Hoodie', value:380,  match:82, owner:'Elena R.',  avatarColor:'#14b8a6', image:'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600&q=80' },
+  { id:'f1', badge:'Hot Swap',  badgeColor:'#ED730C', category:'Electronics', title:'iPhone 14 Pro Max 256GB', desc:'Excellent condition, unlocked. Includes original box and all accessories.', owner:'Marcus C.', avatar:'MC', avatarColor:'#ED730C', image:'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&q=80' },
+  { id:'f2', badge:'Trending',  badgeColor:'#8b5cf6', category:'Gaming',      title:'ASUS ROG Gaming Laptop',  desc:'RTX 3070, 16GB RAM, 1TB SSD. Perfect for gaming and creative work.',      owner:'Juno K.',   avatar:'JK', avatarColor:'#8b5cf6', image:'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600&q=80' },
+  { id:'f3', badge:'Verified',  badgeColor:'#2563eb', category:'Photography', title:'Sony A7 III Full Frame',  desc:'Only 3k shutter count. Kit lens and extra battery included.',               owner:'Chris P.',  avatar:'CP', avatarColor:'#2563eb', image:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&q=80' },
+  { id:'f4', badge:'New',       badgeColor:'#149189', category:'Home',        title:'Dyson V11 Vacuum',        desc:'Powerful cordless vacuum. All attachments included. Works perfectly.',     owner:'Sara J.',   avatar:'SJ', avatarColor:'#f59e0b', image:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80' },
+  { id:'f5', badge:'',          badgeColor:'',        category:'Fashion',     title:'Supreme Box Logo Hoodie', desc:'Size L, worn twice. No stains or defects. Rare FW22 colourway.',           owner:'Elena R.',  avatar:'ER', avatarColor:'#14b8a6', image:'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600&q=80' },
 ]
 const _realFeatured = parseDataset('featured')
 const featuredItems = ref(_realFeatured.length ? _realFeatured : fakeFeaturedItems)
 
 // ── near you ───────────────────────────────────────────────────────────────────
 const fakeNearYouItems = [
-  { id:'n1', category:'Electronics', title:'Vintage Mech Keyboard',    condition:'Like New', badge:'NEW',       badgeColor:'#1a1a1a', wants:'DSLR Camera or Studio Mic',   owner:'Marcus Chen', city:'Brooklyn, NY',    distance:'0.3 mi', image:'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=600&q=80' },
-  { id:'n2', category:'Fashion',     title:'Leather Camera Bag',       condition:'Good',     badge:null,        badgeColor:'',        wants:'Hard-shell Travel Suitcase',  owner:'Elena Rossi',  city:'Queens, NY',      distance:'0.8 mi', image:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80' },
-  { id:'n3', category:'Electronics', title:'Noise Cancel Headphones',  condition:'Like New', badge:'3-WAY',     badgeColor:'#149189', wants:'Graphic Tablet / iPad Air',   owner:'Liam Smith',   city:'Jersey City, NJ', distance:'1.2 mi', image:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80' },
-  { id:'n4', category:'Home',        title:'Artisan Ceramic Set',      condition:'Mint',     badge:null,        badgeColor:'',        wants:'Outdoor Planter / Rug',       owner:'Sara Jenkins', city:'Manhattan, NY',   distance:'1.5 mi', image:'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80' },
-  { id:'n5', category:'Collectibles',title:'Vinyl Records (50+)',      condition:'Good',     badge:null,        badgeColor:'',        wants:'Cassette Player',             owner:'Leo B.',       city:'Brooklyn, NY',    distance:'1.9 mi', image:'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=600&q=80' },
+  { id:'n1', category:'Electronics', title:'Vintage Mech Keyboard',   condition:'Like New', badge:'NEW',    badgeColor:'#1a1a1a', desc:'Custom switches, PBT keycaps. Daily driver for 6 months.',          wants:'DSLR Camera or Studio Mic',  owner:'Marcus Chen',  avatar:'MC', avatarColor:'#ED730C', city:'Brooklyn, NY',    distance:'0.3 mi', image:'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=600&q=80' },
+  { id:'n2', category:'Fashion',     title:'Leather Camera Bag',      condition:'Good',     badge:null,     badgeColor:'',        desc:'Genuine leather. Fits mirrorless body and two lenses comfortably.', wants:'Hard-shell Travel Suitcase', owner:'Elena Rossi',   avatar:'ER', avatarColor:'#ec4899', city:'Queens, NY',      distance:'0.8 mi', image:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80' },
+  { id:'n3', category:'Electronics', title:'Noise Cancel Headphones', condition:'Like New', badge:'3-WAY',  badgeColor:'#149189', desc:'Sony WH-1000XM4. Barely used, includes case and all cables.',         wants:'Graphic Tablet / iPad Air',  owner:'Liam Smith',    avatar:'LS', avatarColor:'#8b5cf6', city:'Jersey City, NJ', distance:'1.2 mi', image:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80' },
+  { id:'n4', category:'Home',        title:'Artisan Ceramic Set',     condition:'Mint',     badge:null,     badgeColor:'',        desc:'Handmade set of 6. Food-safe glazing. No chips or cracks.',           wants:'Outdoor Planter / Rug',      owner:'Sara Jenkins',  avatar:'SJ', avatarColor:'#f59e0b', city:'Manhattan, NY',   distance:'1.5 mi', image:'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80' },
+  { id:'n5', category:'Collectibles',title:'Vinyl Records (50+)',     condition:'Good',     badge:null,     badgeColor:'',        desc:'Mixed genres, 60s–90s. Rare finds, all in original sleeves.',         wants:'Cassette Player',            owner:'Leo B.',        avatar:'LB', avatarColor:'#14b8a6', city:'Brooklyn, NY',    distance:'1.9 mi', image:'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=600&q=80' },
 ]
 const _realNearYou = parseDataset('nearYou')
 const nearYouItems = ref(_realNearYou.length ? _realNearYou : fakeNearYouItems)
@@ -187,44 +187,61 @@ async function loadMore() {
         <a href="#" style="font-size:0.8rem;font-weight:700;color:#ED730C;text-decoration:none;">See all →</a>
       </div>
 
-      <!-- Horizontal scroll -->
       <div class="hscroll" style="display:flex;gap:16px;overflow-x:auto;padding-bottom:8px;">
         <div v-for="item in featuredItems" :key="item.id"
           class="swapy-card"
-          style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;flex-shrink:0;width:260px;cursor:pointer;display:flex;flex-direction:column;">
+          style="background:#fff;border-radius:16px;overflow:hidden;border:1px solid #f3f4f6;flex-shrink:0;width:260px;display:flex;flex-direction:column;">
 
-          <!-- Image -->
-          <div style="position:relative;height:180px;overflow:hidden;background:#f3f4f6;">
-            <img :src="item.image" :alt="item.title" class="card-img" style="width:100%;height:100%;object-fit:cover;transition:transform 0.4s;">
-            <span v-if="item.badge"
-              :style="{position:'absolute',top:'10px',left:'10px',background:item.badgeColor,color:'#fff',fontSize:'0.6rem',fontWeight:'800',padding:'4px 10px',borderRadius:'999px',letterSpacing:'.06em',textTransform:'uppercase'}">
-              {{ item.badge }}
-            </span>
-            <!-- Match badge -->
-            <span v-if="item.match !== null && !item.is_own" style="position:absolute;bottom:10px;left:10px;background:rgba(20,145,137,0.92);color:#fff;font-size:0.62rem;font-weight:800;padding:4px 9px;border-radius:6px;backdrop-filter:blur(4px);">
-              {{ item.match }}% Match
-            </span>
-            <span v-else-if="item.is_own" style="position:absolute;bottom:10px;left:10px;background:rgba(26,26,26,0.75);color:#fff;font-size:0.62rem;font-weight:800;padding:4px 9px;border-radius:6px;backdrop-filter:blur(4px);">
-              Your Listing
-            </span>
+          <!-- Image + badges -->
+          <div style="position:relative;aspect-ratio:16/10;overflow:hidden;background:#f3f4f6;">
+            <img :src="item.image" :alt="item.title" class="card-img" style="width:100%;height:100%;object-fit:cover;transition:transform .35s;">
+            <!-- Dual badge row -->
+            <div style="position:absolute;top:10px;left:10px;display:flex;gap:6px;">
+              <span v-if="item.badge"
+                :style="{background:item.badgeColor,color:'#fff',fontSize:'0.62rem',fontWeight:'800',padding:'4px 9px',borderRadius:'6px',letterSpacing:'.05em',textTransform:'uppercase'}">
+                {{ item.badge }}
+              </span>
+              <span style="background:rgba(255,255,255,0.92);color:#3A3330;font-size:0.62rem;font-weight:700;padding:4px 9px;border-radius:6px;letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(4px);">
+                {{ item.category }}
+              </span>
+            </div>
+            <!-- Heart -->
             <button @click.stop="toggleWish(item.id)" class="wish-btn"
-              style="position:absolute;top:10px;right:10px;width:30px;height:30px;background:rgba(255,255,255,0.92);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              style="position:absolute;top:9px;right:9px;width:30px;height:30px;background:rgba(255,255,255,0.92);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.10);">
               <svg :style="{width:'13px',height:'13px',fill:wishlisted.has(item.id)?'#ED730C':'none',stroke:wishlisted.has(item.id)?'#ED730C':'#6b7280',strokeWidth:'2'}" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
               </svg>
             </button>
           </div>
 
-          <!-- Body -->
-          <div style="padding:14px 16px 16px;flex:1;display:flex;flex-direction:column;">
-            <p style="font-size:0.6rem;font-weight:800;letter-spacing:.09em;color:#9ca3af;text-transform:uppercase;margin:0 0 4px;">{{ item.category }}</p>
-            <h3 style="font-size:0.9rem;font-weight:800;color:#1A1A1A;margin:0 0 8px;line-height:1.3;flex:1;">{{ item.title }}</h3>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;">
-              <span style="font-size:1rem;font-weight:900;color:#ED730C;">${{ item.value.toLocaleString() }}</span>
+          <!-- Card body -->
+          <div style="padding:16px 18px 18px;flex:1;display:flex;flex-direction:column;">
+            <h3 style="font-size:1rem;font-weight:700;color:#1A1A1A;line-height:1.3;margin:0 0 7px;">{{ item.title }}</h3>
+            <p style="font-size:0.8375rem;color:#6b7280;line-height:1.55;margin:0 0 14px;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ item.desc }}</p>
+            <!-- Owner row -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-top:10px;border-top:1px solid #f3f4f6;">
+              <div style="display:flex;align-items:center;">
+                <div :style="{width:'26px',height:'26px',borderRadius:'50%',background:item.avatarColor,border:'2px solid #fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.55rem',fontWeight:'800',color:'#fff',flexShrink:0}">
+                  {{ item.avatar }}
+                </div>
+                <div style="width:26px;height:26px;border-radius:50%;background:#149189;border:2px solid #fff;margin-left:-8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <svg width="10" height="10" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+                </div>
+              </div>
+              <span style="font-size:0.78rem;font-weight:600;color:#6b7280;">{{ item.owner }}</span>
+            </div>
+            <!-- CTA row -->
+            <div style="display:flex;align-items:center;gap:10px;">
               <a :href="'/item/'+item.id" class="swap-btn"
-                style="font-size:0.75rem;font-weight:800;color:#fff;background:#ED730C;padding:7px 16px;border-radius:999px;text-decoration:none;letter-spacing:.03em;font-family:'DM Sans',sans-serif;transition:all .15s;">
+                style="flex:1;display:flex;align-items:center;justify-content:center;background:#ED730C;color:#fff;font-size:0.8125rem;font-weight:700;padding:11px 16px;border-radius:999px;text-decoration:none;font-family:'DM Sans',sans-serif;transition:background .15s;">
                 Swap Now
               </a>
+              <button @click.stop="toggleWish(item.id)"
+                :style="{width:'38px',height:'38px',border:'1.5px solid',borderRadius:'10px',background:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,borderColor:wishlisted.has(item.id)?'#ED730C':'#e5e7eb',transition:'all .15s'}">
+                <svg :style="{width:'15px',height:'15px',fill:wishlisted.has(item.id)?'#ED730C':'none',stroke:wishlisted.has(item.id)?'#ED730C':'#9ca3af',strokeWidth:'2'}" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -248,32 +265,67 @@ async function loadMore() {
       <div class="hscroll" style="display:flex;gap:16px;overflow-x:auto;padding-bottom:8px;">
         <div v-for="item in nearYouItems" :key="item.id"
           class="swapy-card"
-          style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;flex-shrink:0;width:220px;cursor:pointer;">
+          style="background:#fff;border-radius:16px;overflow:hidden;border:1px solid #f3f4f6;flex-shrink:0;width:240px;display:flex;flex-direction:column;">
 
-          <div style="position:relative;height:160px;overflow:hidden;background:#f3f4f6;">
-            <img :src="item.image" :alt="item.title" class="card-img" style="width:100%;height:100%;object-fit:cover;transition:transform 0.4s;">
-            <span v-if="item.badge"
-              :style="{position:'absolute',top:'9px',left:'9px',background:item.badgeColor,color:'#fff',fontSize:'0.58rem',fontWeight:'800',padding:'3px 8px',borderRadius:'5px',letterSpacing:'.06em',textTransform:'uppercase'}">
-              {{ item.badge }}
+          <!-- Image + badges -->
+          <div style="position:relative;aspect-ratio:16/10;overflow:hidden;background:#f3f4f6;">
+            <img :src="item.image" :alt="item.title" class="card-img" style="width:100%;height:100%;object-fit:cover;transition:transform .35s;">
+            <!-- Dual badge row -->
+            <div style="position:absolute;top:10px;left:10px;display:flex;gap:6px;">
+              <span v-if="item.badge"
+                :style="{background:item.badgeColor,color:'#fff',fontSize:'0.62rem',fontWeight:'800',padding:'4px 9px',borderRadius:'6px',letterSpacing:'.05em',textTransform:'uppercase'}">
+                {{ item.badge }}
+              </span>
+              <span style="background:rgba(255,255,255,0.92);color:#3A3330;font-size:0.62rem;font-weight:700;padding:4px 9px;border-radius:6px;letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(4px);">
+                {{ item.category }}
+              </span>
+            </div>
+            <!-- Distance badge bottom-left (kept — key info for this section) -->
+            <span style="position:absolute;bottom:9px;left:9px;background:rgba(0,0,0,0.52);color:#fff;font-size:0.62rem;font-weight:700;padding:3px 8px;border-radius:5px;display:flex;align-items:center;gap:3px;backdrop-filter:blur(4px);">
+              <svg width="8" height="8" fill="#fff" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+              {{ item.distance }}
             </span>
-            <span style="position:absolute;bottom:9px;left:9px;background:rgba(0,0,0,0.55);color:#fff;font-size:0.62rem;font-weight:700;padding:3px 8px;border-radius:5px;backdrop-filter:blur(4px);">
-              📍 {{ item.distance }}
-            </span>
+            <!-- Heart -->
             <button @click.stop="toggleWish(item.id)" class="wish-btn"
-              style="position:absolute;top:9px;right:9px;width:28px;height:28px;background:rgba(255,255,255,0.92);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-              <svg :style="{width:'12px',height:'12px',fill:wishlisted.has(item.id)?'#ED730C':'none',stroke:wishlisted.has(item.id)?'#ED730C':'#6b7280',strokeWidth:'2'}" viewBox="0 0 24 24">
+              style="position:absolute;top:9px;right:9px;width:30px;height:30px;background:rgba(255,255,255,0.92);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.10);">
+              <svg :style="{width:'13px',height:'13px',fill:wishlisted.has(item.id)?'#ED730C':'none',stroke:wishlisted.has(item.id)?'#ED730C':'#6b7280',strokeWidth:'2'}" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
               </svg>
             </button>
           </div>
 
-          <div style="padding:12px 14px 14px;">
-            <p style="font-size:0.6rem;font-weight:800;letter-spacing:.08em;color:#9ca3af;text-transform:uppercase;margin:0 0 3px;">{{ item.category }}</p>
-            <h3 style="font-size:0.85rem;font-weight:800;color:#1A1A1A;margin:0 0 4px;line-height:1.3;">{{ item.title }}</h3>
-            <p style="font-size:0.72rem;color:#9ca3af;margin:0 0 10px;">Wants: <span style="color:#ED730C;font-weight:600;">{{ item.wants }}</span></p>
-            <div style="display:flex;align-items:center;gap:6px;padding-top:8px;border-top:1px solid #f3f4f6;">
-              <img :src="`https://i.pravatar.cc/24?u=${item.id}`" style="width:20px;height:20px;border-radius:50%;object-fit:cover;" alt="">
-              <span style="font-size:0.72rem;font-weight:600;color:#6b7280;">{{ item.owner }}</span>
+          <!-- Card body -->
+          <div style="padding:16px 18px 18px;flex:1;display:flex;flex-direction:column;">
+            <!-- Condition pill -->
+            <div style="margin-bottom:8px;">
+              <span style="font-size:0.62rem;font-weight:700;color:#149189;background:#EDFAF9;padding:2px 7px;border-radius:4px;">{{ item.condition }}</span>
+            </div>
+            <h3 style="font-size:1rem;font-weight:700;color:#1A1A1A;line-height:1.3;margin:0 0 7px;">{{ item.title }}</h3>
+            <p style="font-size:0.8375rem;color:#6b7280;line-height:1.55;margin:0 0 14px;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ item.desc }}</p>
+            <!-- Owner row -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-top:10px;border-top:1px solid #f3f4f6;">
+              <div style="display:flex;align-items:center;">
+                <div :style="{width:'26px',height:'26px',borderRadius:'50%',background:item.avatarColor,border:'2px solid #fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.55rem',fontWeight:'800',color:'#fff',flexShrink:0}">
+                  {{ item.avatar }}
+                </div>
+                <div style="width:26px;height:26px;border-radius:50%;background:#149189;border:2px solid #fff;margin-left:-8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <svg width="10" height="10" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+                </div>
+              </div>
+              <span style="font-size:0.78rem;font-weight:600;color:#6b7280;">{{ item.owner }}</span>
+            </div>
+            <!-- CTA row -->
+            <div style="display:flex;align-items:center;gap:10px;">
+              <a :href="'/item/'+item.id" class="swap-btn"
+                style="flex:1;display:flex;align-items:center;justify-content:center;background:#ED730C;color:#fff;font-size:0.8125rem;font-weight:700;padding:11px 16px;border-radius:999px;text-decoration:none;font-family:'DM Sans',sans-serif;transition:background .15s;">
+                Swap Now
+              </a>
+              <button @click.stop="toggleWish(item.id)"
+                :style="{width:'38px',height:'38px',border:'1.5px solid',borderRadius:'10px',background:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,borderColor:wishlisted.has(item.id)?'#ED730C':'#e5e7eb',transition:'all .15s'}">
+                <svg :style="{width:'15px',height:'15px',fill:wishlisted.has(item.id)?'#ED730C':'none',stroke:wishlisted.has(item.id)?'#ED730C':'#9ca3af',strokeWidth:'2'}" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
