@@ -287,7 +287,7 @@
                     <img class="icon-inactive" src="{{ asset('images/icons/garage-sale-inactive.png') }}" alt="">
                     <img class="icon-active"   src="{{ asset('images/icons/garage-sale-active.png') }}"   alt="">
                 </span>
-                Garage Sale
+                Garage Sales
             </a>
 
             {{-- SERVICES --}}
