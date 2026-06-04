@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import PostItemModal from '../dashboard/PostItemModal.vue'
 
 const el   = document.getElementById('dashboard-app')
 function ds(key, fallback = '[]') {
@@ -15,6 +16,33 @@ const greeting  = computed(() => {
   return 'Good evening'
 })
 
+// ── Post Item Modal ───────────────────────────────────────────────────────────
+const showPostModal = ref(false)
+
+function openPostModal(e) {
+  e.preventDefault()
+  showPostModal.value = true
+}
+
+function onItemPosted(item) {
+  showPostModal.value = false
+  // Optionally prepend the new item to myListings
+  myListings.value.unshift({
+    id:        item.id,
+    category:  item.category,
+    condition: item.condition,
+    title:     item.title,
+    desc:      item.description ?? '',
+    value:     item.estimated_value ?? 0,
+    wants:     item.looking_for ?? '',
+    status:    'active',
+    views:     0,
+    image:     item.images?.[0]
+                 ? '/storage/' + item.images[0].path
+                 : 'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&q=80',
+  })
+}
+
 const stats = [
   { label:'Active Listings',  value:'8',   icon:'box',       color:'#ED730C', bg:'#FFF4EC' },
   { label:'Completed Swaps',  value:'24',  icon:'swap',      color:'#149189', bg:'#EDFAF9' },
@@ -23,7 +51,7 @@ const stats = [
 ]
 
 const quickActions = [
-  { label:'List an Item',      icon:'plus',   color:'#fff', bg:'#ED730C', href:'/listings/create'    },
+  { label:'List an Item',      icon:'plus',   color:'#fff', bg:'#ED730C', href: null                 },
   { label:'Start Garage Sale', icon:'store',  color:'#fff', bg:'#149189', href:'/garage-sale/create' },
   { label:'Offer a Service',   icon:'wrench', color:'#fff', bg:'#8b5cf6', href:'/services/create'    },
   { label:'Smart Match',       icon:'zap',    color:'#fff', bg:'#f59e0b', href:'/matches'            },
@@ -91,9 +119,7 @@ const navSections = [
         alt=""
         style="width:100%;height:100%;object-fit:cover;object-position:center 30%;"
       >
-      <!-- Heavy left-side gradient, image peeks right -->
       <div style="position:absolute;inset:0;background:linear-gradient(100deg,rgba(250,245,237,0.98) 0%,rgba(250,245,237,0.93) 52%,rgba(250,245,237,0.52) 100%);"></div>
-      <!-- Dot texture (matches Browse) -->
       <div style="position:absolute;inset:0;background-image:radial-gradient(circle,rgba(237,115,12,0.055) 1px,transparent 1px);background-size:28px 28px;"></div>
     </div>
 
@@ -145,8 +171,14 @@ const navSections = [
 
       <!-- Quick actions -->
       <div style="display:flex;flex-wrap:wrap;gap:10px;">
-        <a v-for="a in quickActions" :key="a.label" :href="a.href" class="qa-btn"
-          :style="{display:'inline-flex',alignItems:'center',gap:'8px',padding:'10px 20px',borderRadius:'999px',background:a.bg,color:a.color,fontSize:'0.82rem',fontWeight:'800',letterSpacing:'.02em',textDecoration:'none',fontFamily:'\'DM Sans\',sans-serif',boxShadow:`0 4px 14px ${a.bg}55`}">
+        <a
+          v-for="a in quickActions"
+          :key="a.label"
+          :href="a.href || '#'"
+          @click="a.label === 'List an Item' ? openPostModal($event) : null"
+          class="qa-btn"
+          :style="{display:'inline-flex',alignItems:'center',gap:'8px',padding:'10px 20px',borderRadius:'999px',background:a.bg,color:a.color,fontSize:'0.82rem',fontWeight:'800',letterSpacing:'.02em',textDecoration:'none',fontFamily:'\'DM Sans\',sans-serif',boxShadow:`0 4px 14px ${a.bg}55`}"
+        >
           <svg v-if="a.icon==='plus'"   width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <svg v-if="a.icon==='store'"  width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l1-5h16l1 5v1a2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2V9zm2 5v6h14v-6"/></svg>
           <svg v-if="a.icon==='wrench'" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
@@ -259,11 +291,11 @@ const navSections = [
         </div>
         <div style="display:flex;gap:10px;align-items:center;">
           <a href="/listings" style="font-size:0.8rem;font-weight:700;color:#9ca3af;text-decoration:none;">View all →</a>
-          <a href="/listings/create" class="btn-addnew"
-            style="display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:#ED730C;color:#fff;border-radius:999px;font-size:0.8rem;font-weight:800;text-decoration:none;font-family:'DM Sans',sans-serif;box-shadow:0 4px 12px rgba(237,115,12,0.28);">
+          <button @click="showPostModal = true" class="btn-addnew"
+            style="display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:#ED730C;color:#fff;border-radius:999px;font-size:0.8rem;font-weight:800;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 4px 12px rgba(237,115,12,0.28);">
             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add New
-          </a>
+          </button>
         </div>
       </div>
 
@@ -394,6 +426,14 @@ const navSections = [
 
   </div>
 </div>
+
+<!-- ══ POST ITEM MODAL ════════════════════════════════════════════════════ -->
+<PostItemModal
+  v-if="showPostModal"
+  @close="showPostModal = false"
+  @posted="onItemPosted"
+/>
+
 </template>
 
 <style scoped>
