@@ -6,6 +6,7 @@ import GuestNavbar    from './components/global/GuestNavbar.vue'
 import AuthTabs       from './components/auth/Authtabs.vue'
 
 import BrowsePage     from './components/global/BrowsePage.vue'
+import HomesPage      from './components/global/HomesPage.vue'
 import GarageSalePage from './components/global/GarageSalePage.vue'
 import ServicesPage from './components/global/ServicesPage.vue'
 import ItemDetailPage from './components/global/ItemDetailPage.vue'
@@ -37,6 +38,11 @@ if (authEl) {
 // Browse
 if (document.getElementById('browse-app')) {
     createApp(BrowsePage).mount('#browse-app')
+}
+
+// Homes
+if (document.getElementById('homes-app')) {
+    createApp(HomesPage).mount('#homes-app')
 }
 
 // Garage Sale

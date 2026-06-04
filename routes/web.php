@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Pages\HomeController;
 use App\Http\Controllers\Pages\BrowseController;
 use App\Http\Controllers\Pages\GarageSaleController;
+use App\Http\Controllers\Pages\HomesController;
 use App\Http\Controllers\Pages\ServicesController;
 use App\Http\Controllers\Pages\HowItWorksController;
 use App\Http\Controllers\Pages\ItemController;
@@ -25,6 +26,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 // Public routes
 Route::get('/', fn() => redirect()->route('browse'))->name('home');
 Route::get('/browse',        [BrowseController::class,     'index'])->name('browse');
+Route::get('/homes',         [HomesController::class,      'index'])->name('homes');
 Route::get('/garage-sale',   [GarageSaleController::class, 'index'])->name('garage-sale');
 Route::get('/services',      [ServicesController::class,   'index'])->name('services');
 Route::get('/how-it-works',  [HowItWorksController::class, 'index'])->name('how-it-works');
