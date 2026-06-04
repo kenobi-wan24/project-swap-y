@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
+// ref for the hero search bar element
+const heroSearchEl = ref(null)
+
 const el       = document.getElementById('browse-app')
 const allItems = ref(JSON.parse(el?.dataset.listings || '[]'))
 
@@ -13,14 +16,22 @@ const scrollY = ref(0)
 function onScroll() {
   scrollY.value = window.scrollY
   const slot = document.getElementById('nav-sticky-search')
-  if (slot) slot.classList.toggle('open', scrollY.value > 280)
+  if (!slot) return
+  // Detect the actual bottom edge of the hero search bar; fall back to 280
+  let threshold = 280
+  if (heroSearchEl.value) {
+    threshold = heroSearchEl.value.offsetTop + heroSearchEl.value.offsetHeight - 60
+  }
+  slot.classList.toggle('open', scrollY.value > threshold)
 }
 onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
 // ── Nominatim geolocation (OpenStreetMap) ─────────────────────────────────────
-const cityName = ref('')
-const areaName = ref('')
+const cityName    = ref('')
+const areaName    = ref('')
+const nearbyCity  = ref('')
+const nearbyCityItems = ref([])
 
 onMounted(async () => {
   try {
@@ -36,9 +47,26 @@ onMounted(async () => {
     const addr = data.address || {}
     cityName.value = addr.city || addr.town || addr.municipality || ''
     areaName.value = addr.suburb || addr.neighbourhood || addr.quarter || addr.village || cityName.value
+
+    // ── resolve nearby city from backend ──────────────────────────────────────
+    // Pass user's city to a backend endpoint that returns the nearest city
+    // with enough listings. Falls back to dataset if already provided.
+    const preloadedNearby = parseDataset('nearbyCity')
+    if (preloadedNearby.length) {
+      nearbyCity.value  = el?.dataset.nearbyCityName || ''
+      nearbyCityItems.value = preloadedNearby
+    } else {
+      // client-side fallback: pick from mock data if no backend
+      nearbyCity.value      = 'General Santos'
+      nearbyCityItems.value = nearbyCityItemsFallback
+    }
   } catch {
-    cityName.value = ''
-    areaName.value = ''
+    cityName.value        = ''
+    areaName.value        = ''
+    nearbyCity.value      = el?.dataset.nearbyCityName || ''
+    nearbyCityItems.value = parseDataset('nearbyCity').length
+      ? parseDataset('nearbyCity')
+      : nearbyCityItemsFallback
   }
 })
 
@@ -75,18 +103,6 @@ const featuredItems = ref((() => {
   ]
 })())
 
-const recentItems = ref((() => {
-  const real = parseDataset('recent')
-  return real.length ? real : [
-    { id:'r1', category:'Electronics', condition:'Like New', title:'iPad Pro 12.9" M2',        wants:'MacBook Air M2',     value:950,  match:88, badge:null, owner:'James K.',  avatar:'JK', avatarColor:'#6366f1', image:'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=600&q=80' },
-    { id:'r2', category:'Photography', condition:'Good',     title:'DJI Mavic 3 Drone',        wants:'Sony Camera',        value:1400, match:74, badge:null, owner:'Priya M.', avatar:'PM', avatarColor:'#ec4899', image:'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=600&q=80' },
-    { id:'r3', category:'Outdoor',     condition:'Mint',     title:'Trek Mountain Bike 29"',   wants:'Surfboard or Kayak', value:700,  match:61, badge:null, owner:'Alex R.',  avatar:'AR', avatarColor:'#22c55e', image:'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80' },
-    { id:'r4', category:'Electronics', condition:'Good',     title:'MacBook Pro 14" M3',       wants:'Gaming PC Setup',    value:2100, match:95, badge:null, owner:'Sam T.',   avatar:'ST', avatarColor:'#3b82f6', image:'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&q=80' },
-    { id:'r5', category:'Gaming',      condition:'Like New', title:'PS5 + 3 Games Bundle',     wants:'Xbox Series X',      value:550,  match:82, badge:null, owner:'Leo B.',   avatar:'LB', avatarColor:'#8b5cf6', image:'https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=600&q=80' },
-    { id:'r6', category:'Fashion',     condition:'Good',     title:'Nike Air Jordan 1 Retro',  wants:'Adidas Ultraboost',  value:220,  match:69, badge:null, owner:'Rina S.',  avatar:'RS', avatarColor:'#ef4444', image:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80' },
-  ]
-})())
-
 const popularCityItems = ref((() => {
   const real = parseDataset('popularCity')
   return real.length ? real : [
@@ -98,6 +114,16 @@ const popularCityItems = ref((() => {
     { id:'pc6', category:'Outdoor',     condition:'Good',     title:'Camping Gear Bundle',      wants:'Fishing Equipment',     value:310, match:72, badge:null, owner:'Jake M.',      avatar:'JM', avatarColor:'#22c55e', image:'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600&q=80' },
   ]
 })())
+
+// ── nearby city fallback mock data ────────────────────────────────────────────
+const nearbyCityItemsFallback = [
+  { id:'nc1', category:'Electronics', condition:'Good',     title:'Dell UltraSharp 27" 4K',  wants:'Gaming Monitor',       value:350, match:84, badge:null, owner:'Chris P.', avatar:'CP', avatarColor:'#2563eb', image:'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&q=80' },
+  { id:'nc2', category:'Books',       condition:'Like New', title:'Design Thinking Library', wants:'Programming Books',     value:80,  match:55, badge:null, owner:'Ana L.',   avatar:'AL', avatarColor:'#a78bfa', image:'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600&q=80' },
+  { id:'nc3', category:'Home',        condition:'Mint',     title:'Standing Desk Frame',     wants:'Office Chair',         value:280, match:90, badge:null, owner:'Tom W.',   avatar:'TW', avatarColor:'#0ea5e9', image:'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=600&q=80' },
+  { id:'nc4', category:'Gaming',      condition:'Good',     title:'Razer Blade 15 Gaming',   wants:'MacBook Pro',          value:1300,match:76, badge:null, owner:'Kai D.',   avatar:'KD', avatarColor:'#10b981', image:'https://images.unsplash.com/photo-1593642634524-b40b5baae6bb?w=600&q=80' },
+  { id:'nc5', category:'Fashion',     condition:'Like New', title:'Uniqlo Cashmere Crew',    wants:'Linen Shirts',         value:65,  match:68, badge:null, owner:'Mia S.',   avatar:'MS', avatarColor:'#f43f5e', image:'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=600&q=80' },
+  { id:'nc6', category:'Photography', condition:'Good',     title:'Godox LED Panel',         wants:'Ring Light / Softbox', value:120, match:83, badge:null, owner:'Ben H.',   avatar:'BH', avatarColor:'#f97316', image:'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&q=80' },
+]
 
 const nearAreaItems = ref((() => {
   const real = parseDataset('nearArea')
@@ -159,7 +185,8 @@ async function loadMore() {
   ═══════════════════════════════════════════ -->
   <Teleport to="#nav-sticky-search">
     <div style="max-width:760px;margin:0 auto;" @click.stop>
-      <div style="background:#fff;border-radius:999px;display:flex;align-items:center;padding:6px 6px 6px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1.5px solid #EBEBEB;">
+      <!-- Desktop: full pill with category + location -->
+      <div class="sticky-search-desktop" style="background:#fff;border-radius:999px;display:flex;align-items:center;padding:6px 6px 6px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1.5px solid #EBEBEB;">
         <div style="flex:1;display:flex;align-items:center;gap:8px;border-right:1px solid #EBEBEB;padding-right:16px;">
           <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           <input v-model="searchInput" type="text" placeholder="What do you have to swap?"
@@ -179,6 +206,15 @@ async function loadMore() {
         <button @click="doSearch"
           style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:12px 28px;font-size:0.875rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(237,115,12,0.4);"
           onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">Search</button>
+      </div>
+      <!-- Mobile: compact search pill -->
+      <div class="sticky-search-mobile" style="background:#fff;border-radius:999px;align-items:center;padding:5px 5px 5px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.10);border:1.5px solid #EBEBEB;">
+        <svg width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:8px;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input v-model="searchInput" type="text" placeholder="Search swaps..."
+          style="flex:1;border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;min-width:0;"
+          @keydown.enter="doSearch">
+        <button @click="doSearch"
+          style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:9px 18px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;">Search</button>
       </div>
     </div>
   </Teleport>
@@ -192,26 +228,39 @@ async function loadMore() {
         <h1 style="font-size:clamp(2.2rem,5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.03em;color:#1A1A1A;margin:0;">Don't buy it.</h1>
         <h1 style="font-size:clamp(2.2rem,5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.03em;color:#ED730C;margin:0;">Swap it.</h1>
       </div>
-      <div style="background:#fff;border-radius:999px;display:flex;align-items:center;padding:6px 6px 6px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1.5px solid #EBEBEB;max-width:760px;margin:0 auto 20px;">
-        <div style="flex:1;display:flex;align-items:center;gap:8px;border-right:1px solid #EBEBEB;padding-right:16px;">
-          <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <!-- Hero search: full pill on desktop, simple input on mobile -->
+      <div ref="heroSearchEl" class="hero-search-wrap">
+        <!-- Desktop pill -->
+        <div class="hero-search-desktop">
+          <div style="flex:1;display:flex;align-items:center;gap:8px;border-right:1px solid #EBEBEB;padding-right:16px;">
+            <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input v-model="searchInput" type="text" placeholder="What do you have to swap?"
+              style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:100%;"
+              @keydown.enter="doSearch">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:0 16px;border-right:1.5px solid #EBEBEB;">
+            <svg width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h8m-8 6h16"/></svg>
+            <select v-model="activeTab" @click.stop style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;cursor:pointer;appearance:none;padding-right:6px;">
+              <option v-for="c in categories" :key="c" :value="c">{{ c === 'All' ? 'Category' : c }}</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:0 14px;">
+            <svg width="13" height="13" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            <input type="text" placeholder="Location" style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:90px;">
+          </div>
+          <button @click="doSearch"
+            style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:12px 28px;font-size:0.875rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(237,115,12,0.4);"
+            onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">Search</button>
+        </div>
+        <!-- Mobile pill: just input + button -->
+        <div class="hero-search-mobile">
+          <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           <input v-model="searchInput" type="text" placeholder="What do you have to swap?"
-            style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:100%;"
+            style="flex:1;border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;min-width:0;"
             @keydown.enter="doSearch">
+          <button @click="doSearch"
+            style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:10px 18px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;">Search</button>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;padding:0 16px;border-right:1.5px solid #EBEBEB;">
-          <svg width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h8m-8 6h16"/></svg>
-          <select v-model="activeTab" @click.stop style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;cursor:pointer;appearance:none;padding-right:6px;">
-            <option v-for="c in categories" :key="c" :value="c">{{ c === 'All' ? 'Category' : c }}</option>
-          </select>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;padding:0 14px;">
-          <svg width="13" height="13" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-          <input type="text" placeholder="Location" style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:90px;">
-        </div>
-        <button @click="doSearch"
-          style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:12px 28px;font-size:0.875rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(237,115,12,0.4);"
-          onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">Search</button>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
         <button v-for="cat in categories.slice(0,8)" :key="cat" @click="activeTab = cat"
@@ -228,7 +277,10 @@ async function loadMore() {
   <section class="scroll-section">
     <div class="section-inner">
       <div class="section-header">
-        <h2 class="section-title">Top Featured Swaps</h2>
+        <div>
+          <h2 class="section-title">Top Featured Swaps</h2>
+          <p class="section-sub">Promoted listings from our community</p>
+        </div>
         <a href="#" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
@@ -237,6 +289,10 @@ async function loadMore() {
             <div class="card-img-wrap">
               <img :src="item.image" :alt="item.title" class="card-img">
               <div class="pills-row">
+                <span class="badge-pill">
+                  <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;margin-right:3px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  Featured
+                </span>
                 <span v-if="item.match" class="match-pill">{{ item.match }}% Match</span>
               </div>
               <button @click.stop="toggleWish(item.id)" class="wish-btn">
@@ -258,16 +314,19 @@ async function loadMore() {
   </section>
 
   <!-- ───────────────────────────────────────────
-       2. RECENTLY ADDED
+       2. POPULAR IN [CITY]
   ─────────────────────────────────────────── -->
   <section class="scroll-section">
     <div class="section-inner">
       <div class="section-header">
-        <h2 class="section-title">Recently Added</h2>
+        <div>
+          <h2 class="section-title">Popular in {{ cityName || 'Your City' }}</h2>
+          <p class="section-sub">Most viewed &amp; matched swaps in your city</p>
+        </div>
         <a href="#" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
-        <div v-for="item in recentItems" :key="item.id" class="swapy-card hscroll-card">
+        <div v-for="item in popularCityItems" :key="item.id" class="swapy-card hscroll-card">
           <a :href="'/item/'+item.id" class="card-link">
             <div class="card-img-wrap">
               <img :src="item.image" :alt="item.title" class="card-img">
@@ -291,16 +350,21 @@ async function loadMore() {
   </section>
 
   <!-- ───────────────────────────────────────────
-       3. POPULAR IN [CITY]
+       3. AVAILABLE IN [NEARBY CITY]
+       — only renders when nearbyCity is resolved
+       — and it's different from the user's city
   ─────────────────────────────────────────── -->
-  <section class="scroll-section">
+  <section v-if="nearbyCity && nearbyCity !== cityName && nearbyCityItems.length" class="scroll-section">
     <div class="section-inner">
       <div class="section-header">
-        <h2 class="section-title">Popular in {{ cityName || 'Your City' }}</h2>
+        <div>
+          <h2 class="section-title">Available in {{ nearbyCity }}</h2>
+          <p class="section-sub">Active swaps from a nearby city</p>
+        </div>
         <a href="#" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
-        <div v-for="item in popularCityItems" :key="item.id" class="swapy-card hscroll-card">
+        <div v-for="item in nearbyCityItems" :key="item.id" class="swapy-card hscroll-card">
           <a :href="'/item/'+item.id" class="card-link">
             <div class="card-img-wrap">
               <img :src="item.image" :alt="item.title" class="card-img">
@@ -329,7 +393,10 @@ async function loadMore() {
   <section class="scroll-section">
     <div class="section-inner">
       <div class="section-header">
-        <h2 class="section-title">Swaps near {{ areaName || 'Your Area' }}</h2>
+        <div>
+          <h2 class="section-title">Swaps near {{ areaName || 'Your Area' }}</h2>
+          <p class="section-sub">Items closest to your location</p>
+        </div>
         <a href="#" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
@@ -410,6 +477,7 @@ async function loadMore() {
 
     <div class="section-inner" style="padding-top:28px;padding-bottom:0;">
       <h2 class="section-title">All Items</h2>
+      <p class="section-sub" style="margin-top:4px;">Browse everything on Swapy</p>
     </div>
 
     <div class="section-inner" style="padding-top:20px;padding-bottom:72px;">
@@ -465,7 +533,9 @@ async function loadMore() {
       </div>
 
       <div v-if="filtered.length === 0 && !skeletonLoading" style="text-align:center;padding:80px 0;">
-        <div style="font-size:3rem;margin-bottom:16px;">🔍</div>
+        <div style="margin-bottom:16px;display:flex;justify-content:center;">
+          <svg width="52" height="52" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
+        </div>
         <h3 style="font-size:1.125rem;font-weight:700;color:#1A1A1A;margin-bottom:8px;">No items found</h3>
         <p style="font-size:0.875rem;color:#9ca3af;margin-bottom:20px;">Try adjusting your filters or search term.</p>
         <button @click="activeTab='All';valueMax=5000;search=''" class="clear-btn">Clear Filters</button>
@@ -492,9 +562,10 @@ async function loadMore() {
 /* ── Layout ── */
 .scroll-section { padding: 0 0 48px; background: #fff; }
 .section-inner  { max-width: 1680px; margin: 0 auto; padding: 0 40px; }
-.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.section-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
 .section-title  { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 900; color: #1A1A1A; margin: 0; letter-spacing: -.02em; }
-.see-all        { font-size: 0.8rem; font-weight: 700; color: #ED730C; text-decoration: none; white-space: nowrap; }
+.section-sub    { font-size: 0.78rem; color: #9ca3af; font-weight: 500; margin: 3px 0 0; }
+.see-all        { font-size: 0.8rem; font-weight: 700; color: #ED730C; text-decoration: none; white-space: nowrap; margin-top: 4px; }
 .see-all:hover  { text-decoration: underline; }
 
 /* ── Horizontal scroll row ── */
@@ -550,7 +621,7 @@ async function loadMore() {
 }
 .swapy-card:hover .card-img { transform: scale(1.04); }
 
-/* ── Card body — 3-row grid for perfect alignment ── */
+/* ── Card body ── */
 .card-body {
   padding: 12px 14px 14px;
   display: grid;
@@ -603,7 +674,7 @@ async function loadMore() {
   margin: 0;
 }
 
-/* ── Pills row ── */
+/* ── Pills ── */
 .pills-row {
   position: absolute;
   top: 10px; left: 10px;
@@ -616,27 +687,29 @@ async function loadMore() {
   color: #fff;
   font-size: 0.62rem;
   font-weight: 800;
-  padding: 5px 12px;
-  border-radius: 999px;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  font-family: 'DM Sans', sans-serif;
-  white-space: nowrap;
-}
-.match-pill {
-  background: #ED730C;
-  color: #fff;
-  font-size: 0.62rem;
-  font-weight: 800;
-  padding: 5px 12px;
+  padding: 5px 10px;
   border-radius: 999px;
   letter-spacing: .04em;
   font-family: 'DM Sans', sans-serif;
   white-space: nowrap;
 }
+.match-pill {
+  background: rgba(26,26,26,0.75);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 999px;
+  letter-spacing: .04em;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
 .match-pill--solo {
   position: absolute;
   top: 10px; left: 10px;
+  background: rgba(26,26,26,0.75);
+  backdrop-filter: blur(4px);
 }
 
 /* ── Wishlist heart ── */
@@ -753,11 +826,7 @@ async function loadMore() {
 }
 .load-more-btn:hover { background: #1A1A1A; color: #fff; }
 
-/* ─────────────────────────────────────────────
-   RESPONSIVE BREAKPOINTS
-───────────────────────────────────────────── */
-
-/* Mobile ≤ 480px — 2 columns */
+/* ── Responsive ── */
 @media (max-width: 480px) {
   .section-inner  { padding: 0 16px; }
   .filter-bar     { padding: 12px 16px; }
@@ -765,36 +834,64 @@ async function loadMore() {
   .main-grid      { grid-template-columns: repeat(2, 1fr); }
   .list-img       { width: 80px; height: 68px; }
 }
-
-/* Tablet 481–768px — 3 columns */
 @media (min-width: 481px) and (max-width: 768px) {
   .section-inner  { padding: 0 24px; }
   .filter-bar     { padding: 12px 24px; }
   .hscroll        { grid-auto-columns: calc((100% - 14px * 2) / 3); }
   .main-grid      { grid-template-columns: repeat(3, 1fr); }
 }
-
-/* Small laptop 769–1024px — 4 columns */
 @media (min-width: 769px) and (max-width: 1024px) {
   .section-inner  { padding: 0 32px; }
   .filter-bar     { padding: 12px 32px; }
   .hscroll        { grid-auto-columns: calc((100% - 14px * 3) / 4); }
   .main-grid      { grid-template-columns: repeat(4, 1fr); }
 }
-
-/* Standard 1080p 1025–1439px — 6 columns */
 @media (min-width: 1025px) and (max-width: 1439px) {
   .section-inner  { padding: 0 40px; }
   .filter-bar     { padding: 12px 40px; }
   .hscroll        { grid-auto-columns: calc((100% - 14px * 4) / 5); }
   .main-grid      { grid-template-columns: repeat(5, 1fr); }
 }
-
-/* Large 1440p+ — 7 columns */
 @media (min-width: 1440px) {
   .section-inner  { padding: 0 80px; }
   .filter-bar     { padding: 12px 80px; }
   .hscroll        { grid-auto-columns: calc((100% - 14px * 5) / 6); }
   .main-grid      { grid-template-columns: repeat(6, 1fr); }
+}
+
+/* ── Sticky search responsive variants ── */
+.sticky-search-mobile { display: none; }
+@media (max-width: 767px) {
+  .sticky-search-desktop { display: none !important; }
+  .sticky-search-mobile  { display: flex !important; }
+}
+
+/* ── Hero search responsive ── */
+.hero-search-wrap {
+  max-width: 760px;
+  margin: 0 auto 20px;
+}
+.hero-search-desktop {
+  background: #fff;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  padding: 6px 6px 6px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  border: 1.5px solid #EBEBEB;
+}
+.hero-search-mobile {
+  display: none;
+  background: #fff;
+  border-radius: 999px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px 10px 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  border: 1.5px solid #EBEBEB;
+}
+@media (max-width: 767px) {
+  .hero-search-desktop { display: none !important; }
+  .hero-search-mobile  { display: flex !important; }
 }
 </style>
