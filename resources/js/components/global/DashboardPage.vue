@@ -1,13 +1,16 @@
 <script setup>
 import { ref, computed } from 'vue'
+import PostItemModal from '../dashboard/PostItemModal.vue'
 
-const el   = document.getElementById('dashboard-app')
+// ── dataset helpers ────────────────────────────────────────────────────────────
+const el = document.getElementById('dashboard-app')
 function ds(key, fallback = '[]') {
   try { return JSON.parse(el?.dataset[key] || fallback) } catch { return JSON.parse(fallback) }
 }
 
-const user = ref(ds('user', '{}'))
-const firstName = computed(() => user.value.name?.split(' ')[0] || 'Alex')
+// ── user ───────────────────────────────────────────────────────────────────────
+const user      = ref(ds('user', '{}'))
+const firstName = computed(() => user.value.name?.split(' ')[0] || 'User')
 const greeting  = computed(() => {
   const h = new Date().getHours()
   if (h < 12) return 'Good morning'
@@ -15,32 +18,70 @@ const greeting  = computed(() => {
   return 'Good evening'
 })
 
-const stats = [
-  { label:'Active Listings',  value:'8',   icon:'box',       color:'#ED730C', bg:'#FFF4EC' },
-  { label:'Completed Swaps',  value:'24',  icon:'swap',      color:'#149189', bg:'#EDFAF9' },
-  { label:'New Matches',      value:'12',  icon:'lightning', color:'#8b5cf6', bg:'#F5F3FF' },
-  { label:'Avg. Rating',      value:'4.9', icon:'star',      color:'#f59e0b', bg:'#FFFBEB' },
-]
+// ── stats — wired from controller ─────────────────────────────────────────────
+// Controller passes: [{ key, label, value, accent, bg, border }, ...]
+const rawStats = ds('stats', '[]')
+
+// Map controller keys to icon names used in template
+const iconMap = { listings:'box', swaps:'swap', negotiations:'lightning', views:'star' }
+const colorMap = { listings:'#ED730C', swaps:'#149189', negotiations:'#8b5cf6', views:'#f59e0b' }
+const bgMap    = { listings:'#FFF4EC', swaps:'#EDFAF9', negotiations:'#F5F3FF', views:'#FFFBEB' }
+
+const stats = ref(rawStats.map(s => ({
+  label: s.label,
+  value: s.value,
+  icon:  iconMap[s.key]    || 'box',
+  color: s.accent          || colorMap[s.key] || '#ED730C',
+  bg:    s.bg              || bgMap[s.key]    || '#FFF4EC',
+})))
+
+// Reactive active-listings counter (so it updates when user posts a new item)
+const activeListingsStat = computed(() => stats.value.find(s => s.icon === 'box'))
+
+// ── quick actions — "List an Item" opens modal, rest are links ─────────────────
+const showPostModal = ref(false)
 
 const quickActions = [
-  { label:'List an Item',      icon:'plus',   color:'#fff', bg:'#ED730C', href:'/listings/create'    },
-  { label:'Start Garage Sale', icon:'store',  color:'#fff', bg:'#149189', href:'/garage-sale/create' },
-  { label:'Offer a Service',   icon:'wrench', color:'#fff', bg:'#8b5cf6', href:'/services/create'    },
-  { label:'Smart Match',       icon:'zap',    color:'#fff', bg:'#f59e0b', href:'/matches'            },
+  { label:'List an Item',      icon:'plus',   color:'#fff', bg:'#ED730C', action:'modal'                  },
+  { label:'Start Garage Sale', icon:'store',  color:'#fff', bg:'#149189', href:'/garage-sale/create'      },
+  { label:'Offer a Service',   icon:'wrench', color:'#fff', bg:'#8b5cf6', href:'/services/create'         },
+  { label:'Smart Match',       icon:'zap',    color:'#fff', bg:'#f59e0b', href:'/matches'                 },
 ]
 
-const swapRequests = ref([
-  { id:'sr1', requester:'Marcus Chen',  avatar:'MC', avatarColor:'#ED730C', rating:4.8, myItem:'Vintage Camera',   theirItem:'Gaming Console',  myImage:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=120&q=80', theirImage:'https://images.unsplash.com/photo-1606318313647-135f3c3a7c11?w=120&q=80', time:'2h ago' },
-  { id:'sr2', requester:'Elena Rossi',  avatar:'ER', avatarColor:'#149189', rating:4.9, myItem:'Mech Keyboard',    theirItem:'Sony Headphones', myImage:'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=120&q=80', theirImage:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120&q=80', time:'5h ago' },
-  { id:'sr3', requester:'Liam Smith',   avatar:'LS', avatarColor:'#8b5cf6', rating:4.7, myItem:'Ceramic Vase Set', theirItem:'Leather Bag',     myImage:'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=120&q=80', theirImage:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=120&q=80', time:'1d ago'  },
-])
+function handleQuickAction(a) {
+  if (a.action === 'modal') { showPostModal.value = true; return }
+  if (a.href) window.location.href = a.href
+}
 
-const myListings = ref([
-  { id:'ml1', category:'Electronics', condition:'Like New', title:'iPhone 14 Pro Max 256GB', desc:'Excellent condition, unlocked, box included.',       value:900,  wants:'Gaming Laptop',     status:'active', views:124, image:'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&q=80' },
-  { id:'ml2', category:'Photography', condition:'Good',     title:'Sony A7 III Full Frame',  desc:'3k shutter count, kit lens and extra battery.',      value:1800, wants:'Canon R5 / Lenses', status:'active', views:89,  image:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&q=80' },
-  { id:'ml3', category:'Home',        condition:'Mint',     title:'Artisan Ceramic Set',     desc:'Handmade set of 6. No chips or cracks whatsoever.', value:220,  wants:'Outdoor Planter',   status:'paused', views:42,  image:'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80' },
-  { id:'ml4', category:'Fashion',     condition:'Good',     title:'Leather Camera Bag',      desc:'Fits mirrorless + 2 lenses. Genuine real leather.', value:180,  wants:'Travel Suitcase',   status:'active', views:67,  image:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80' },
-])
+// ── swap requests — real data from controller, fallback empty ─────────────────
+const swapRequests = ref(ds('swapRequests', '[]'))
+
+// ── my listings — real from controller (Item::with('images')) ─────────────────
+// Controller passes: [{ id, title, category, condition, description, estimated_value,
+//                       looking_for, status, views, image }, ...]
+const myListings = ref(ds('myListings', '[]'))
+
+// When PostItemModal emits 'posted', prepend the new item and bump the stat
+function onItemPosted(item) {
+  showPostModal.value = false
+  // Normalise the shape returned by /items (matches what the controller sends)
+  myListings.value.unshift({
+    id:        item.id,
+    title:     item.title,
+    category:  item.category,
+    condition: item.condition,
+    desc:      item.description || '',
+    value:     item.estimated_value || 0,
+    wants:     item.looking_for || '',
+    status:    'active',
+    views:     0,
+    image:     item.primary_image || null,
+  })
+  // Bump the active listings stat reactively
+  if (activeListingsStat.value) {
+    activeListingsStat.value.value = String(Number(activeListingsStat.value.value) + 1)
+  }
+}
 
 const statusCfg = {
   active:  { label:'Active',  color:'#149189', bg:'#EDFAF9' },
@@ -48,26 +89,21 @@ const statusCfg = {
   pending: { label:'Pending', color:'#f59e0b', bg:'#FFFBEB' },
 }
 
-const smartMatches = ref([
-  { id:'sm1', category:'Electronics', condition:'Like New', title:'MacBook Air M2',          desc:'Barely used. All original accessories included.',    value:1100, match:96, badge:'Top Match',  badgeColor:'#149189', owner:'Priya M.',  avatar:'PM', avatarColor:'#ec4899', location:'2.1 mi', image:'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&q=80' },
-  { id:'sm2', category:'Gaming',      condition:'Good',     title:'PlayStation 5 + 3 Games', desc:'Digital edition, 14 months old, great condition.',   value:480,  match:88, badge:'High Match', badgeColor:'#8b5cf6', owner:'James K.',  avatar:'JK', avatarColor:'#6366f1', location:'4.5 mi', image:'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=600&q=80' },
-  { id:'sm3', category:'Outdoor',     condition:'Mint',     title:'Trek MTB Carbon 29"',     desc:'Carbon frame, Shimano groupset, ridden ~200km.',     value:720,  match:81, badge:'',           badgeColor:'',        owner:'Alex R.',   avatar:'AR', avatarColor:'#22c55e', location:'1.8 mi', image:'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80' },
-  { id:'sm4', category:'Fashion',     condition:'Mint',     title:'Supreme FW22 Hoodie L',   desc:'Worn once. With tags. Rare colourway. Size L.',      value:360,  match:76, badge:'',           badgeColor:'',        owner:'Elena R.',  avatar:'ER', avatarColor:'#14b8a6', location:'6.2 mi', image:'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600&q=80' },
-])
+// ── smart matches — real or empty ─────────────────────────────────────────────
+const smartMatches = ref(ds('smartMatches', '[]'))
 
-const messages = ref([
-  { id:'m1', name:'Marcus Chen', avatar:'MC', color:'#ED730C', preview:'"Hey! Still down to swap the keyboard?"',   time:'2m',  unread:true  },
-  { id:'m2', name:'Elena Rossi', avatar:'ER', color:'#149189', preview:'"Deal confirmed ✓ — shipping tomorrow"',    time:'1h',  unread:true  },
-  { id:'m3', name:'Priya Mehta', avatar:'PM', color:'#ec4899', preview:'"Can we meet at the usual spot on Sat?"',   time:'3h',  unread:false },
-  { id:'m4', name:'James Kim',   avatar:'JK', color:'#6366f1', preview:'"Thanks for the smooth swap 🙌"',           time:'1d',  unread:false },
-])
+// ── messages — real or empty ───────────────────────────────────────────────────
+const messages = ref(ds('messages', '[]'))
 
 const unreadCount = computed(() => messages.value.filter(m => m.unread).length)
-const wishlisted  = ref(new Set())
+
+// ── wishlist / swap actions ────────────────────────────────────────────────────
+const wishlisted = ref(new Set())
 function toggleWish(id) { const s=new Set(wishlisted.value); s.has(id)?s.delete(id):s.add(id); wishlisted.value=s }
 function acceptSwap(id)  { swapRequests.value = swapRequests.value.filter(r => r.id !== id) }
 function declineSwap(id) { swapRequests.value = swapRequests.value.filter(r => r.id !== id) }
 
+// ── nav ────────────────────────────────────────────────────────────────────────
 const activeSection = ref('overview')
 const navSections = [
   { key:'overview', label:'Overview'    },
@@ -80,6 +116,13 @@ const navSections = [
 
 <template>
 <div style="min-height:100vh;background:#FAF8F5;font-family:'DM Sans',sans-serif;">
+
+  <!-- ══ POST ITEM MODAL ════════════════════════════════════════════════════ -->
+  <PostItemModal
+    v-if="showPostModal"
+    @close="showPostModal = false"
+    @posted="onItemPosted"
+  />
 
   <!-- ══ HERO / WELCOME BANNER ══════════════════════════════════════════════ -->
   <section style="position:relative;overflow:hidden;padding:52px 40px 44px;">
@@ -145,14 +188,14 @@ const navSections = [
 
       <!-- Quick actions -->
       <div style="display:flex;flex-wrap:wrap;gap:10px;">
-        <a v-for="a in quickActions" :key="a.label" :href="a.href" class="qa-btn"
-          :style="{display:'inline-flex',alignItems:'center',gap:'8px',padding:'10px 20px',borderRadius:'999px',background:a.bg,color:a.color,fontSize:'0.82rem',fontWeight:'800',letterSpacing:'.02em',textDecoration:'none',fontFamily:'\'DM Sans\',sans-serif',boxShadow:`0 4px 14px ${a.bg}55`}">
+        <button v-for="a in quickActions" :key="a.label" @click="handleQuickAction(a)" class="qa-btn"
+          :style="{display:'inline-flex',alignItems:'center',gap:'8px',padding:'10px 20px',borderRadius:'999px',background:a.bg,color:a.color,fontSize:'0.82rem',fontWeight:'800',letterSpacing:'.02em',border:'none',cursor:'pointer',fontFamily:'\'DM Sans\',sans-serif',boxShadow:`0 4px 14px ${a.bg}55`}">
           <svg v-if="a.icon==='plus'"   width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <svg v-if="a.icon==='store'"  width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l1-5h16l1 5v1a2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2V9zm2 5v6h14v-6"/></svg>
           <svg v-if="a.icon==='wrench'" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
           <svg v-if="a.icon==='zap'"    width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
           {{ a.label }}
-        </a>
+        </button>
       </div>
     </div>
   </section>
@@ -185,7 +228,13 @@ const navSections = [
         <a href="/swap-requests" style="font-size:0.8rem;font-weight:700;color:#ED730C;text-decoration:none;">View all →</a>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;">
+      <div v-if="swapRequests.length === 0"
+        style="background:#fff;border-radius:18px;border:1px solid #EDE8E0;padding:48px;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">🤝</div>
+        <p style="font-size:0.9rem;font-weight:700;color:#1A1A1A;margin:0 0 4px;">No pending swap requests</p>
+        <p style="font-size:0.8rem;color:#9ca3af;margin:0;">When someone wants to swap with you, they'll appear here.</p>
+      </div>
+      <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;">
         <div v-for="req in swapRequests" :key="req.id" class="swapy-card"
           style="background:#fff;border-radius:18px;border:1px solid #EDE8E0;box-shadow:0 4px 16px rgba(0,0,0,0.06);padding:18px 20px;">
 
@@ -193,7 +242,12 @@ const navSections = [
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
             <div style="flex:1;text-align:center;">
               <div style="width:64px;height:64px;border-radius:12px;overflow:hidden;background:#f3f4f6;margin:0 auto 5px;">
-                <img :src="req.myImage" style="width:100%;height:100%;object-fit:cover;">
+                <img v-if="req.myImage" :src="req.myImage"
+                  style="width:100%;height:100%;object-fit:cover;"
+                  @error="e => e.target.style.display='none'">
+                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                  <svg width="24" height="24" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                </div>
               </div>
               <p style="font-size:0.7rem;font-weight:700;color:#1A1A1A;margin:0;line-height:1.2;">{{ req.myItem }}</p>
               <p style="font-size:0.62rem;color:#9ca3af;margin:2px 0 0;">Your item</p>
@@ -208,7 +262,12 @@ const navSections = [
             </div>
             <div style="flex:1;text-align:center;">
               <div style="width:64px;height:64px;border-radius:12px;overflow:hidden;background:#f3f4f6;margin:0 auto 5px;">
-                <img :src="req.theirImage" style="width:100%;height:100%;object-fit:cover;">
+                <img v-if="req.theirImage" :src="req.theirImage"
+                  style="width:100%;height:100%;object-fit:cover;"
+                  @error="e => e.target.style.display='none'">
+                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                  <svg width="24" height="24" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                </div>
               </div>
               <p style="font-size:0.7rem;font-weight:700;color:#1A1A1A;margin:0;line-height:1.2;">{{ req.theirItem }}</p>
               <p style="font-size:0.62rem;color:#9ca3af;margin:2px 0 0;">They offer</p>
@@ -259,20 +318,36 @@ const navSections = [
         </div>
         <div style="display:flex;gap:10px;align-items:center;">
           <a href="/listings" style="font-size:0.8rem;font-weight:700;color:#9ca3af;text-decoration:none;">View all →</a>
-          <a href="/listings/create" class="btn-addnew"
-            style="display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:#ED730C;color:#fff;border-radius:999px;font-size:0.8rem;font-weight:800;text-decoration:none;font-family:'DM Sans',sans-serif;box-shadow:0 4px 12px rgba(237,115,12,0.28);">
+          <button @click="showPostModal = true" class="btn-addnew"
+            style="display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:#ED730C;color:#fff;border-radius:999px;font-size:0.8rem;font-weight:800;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 4px 12px rgba(237,115,12,0.28);">
             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add New
-          </a>
+          </button>
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:18px;">
+      <div v-if="myListings.length === 0"
+        style="background:#fff;border-radius:20px;border:1px solid #EDE8E0;padding:60px;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">📦</div>
+        <p style="font-size:0.9rem;font-weight:700;color:#1A1A1A;margin:0 0 4px;">No listings yet</p>
+        <p style="font-size:0.8rem;color:#9ca3af;margin:0 0 20px;">Start by posting your first item to swap.</p>
+        <button @click="showPostModal = true"
+          style="display:inline-flex;align-items:center;gap:7px;padding:10px 22px;background:#ED730C;color:#fff;border-radius:999px;font-size:0.82rem;font-weight:800;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;">
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Post Your First Item
+        </button>
+      </div>
+      <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:18px;">
         <div v-for="item in myListings" :key="item.id" class="swapy-card"
           style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;box-shadow:0 4px 18px rgba(0,0,0,0.07);display:flex;flex-direction:column;">
 
           <div style="position:relative;aspect-ratio:4/3;overflow:hidden;background:#f3f4f6;flex-shrink:0;">
-            <img :src="item.image" :alt="item.title" class="card-img" style="width:100%;height:100%;object-fit:cover;transition:transform .4s;">
+            <img v-if="item.image" :src="item.image" :alt="item.title" class="card-img"
+              style="width:100%;height:100%;object-fit:cover;transition:transform .4s;"
+              @error="e => e.target.style.display='none'">
+            <div v-if="!item.image" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f3f4f6;">
+              <svg width="36" height="36" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            </div>
             <span :style="{position:'absolute',top:'11px',left:'11px',background:statusCfg[item.status]?.bg,color:statusCfg[item.status]?.color,fontSize:'0.6rem',fontWeight:'800',padding:'4px 10px',borderRadius:'999px',letterSpacing:'.06em',textTransform:'uppercase',border:`1px solid ${statusCfg[item.status]?.color}44`}">
               {{ statusCfg[item.status]?.label }}
             </span>
@@ -306,7 +381,7 @@ const navSections = [
             </div>
           </div>
         </div>
-      </div>
+      </div><!-- end v-else listings grid -->
     </section>
 
     <!-- ── SMART MATCHES ── -->
@@ -319,7 +394,13 @@ const navSections = [
         <a href="/matches" style="font-size:0.8rem;font-weight:700;color:#ED730C;text-decoration:none;">See all →</a>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:18px;">
+      <div v-if="smartMatches.length === 0"
+        style="background:#fff;border-radius:20px;border:1px solid #EDE8E0;padding:60px;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">⚡</div>
+        <p style="font-size:0.9rem;font-weight:700;color:#1A1A1A;margin:0 0 4px;">No matches yet</p>
+        <p style="font-size:0.8rem;color:#9ca3af;margin:0;">Post items to start getting AI-powered swap suggestions.</p>
+      </div>
+      <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:18px;">
         <div v-for="item in smartMatches" :key="item.id" class="swapy-card"
           style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;box-shadow:0 4px 18px rgba(0,0,0,0.07);display:flex;flex-direction:column;">
 

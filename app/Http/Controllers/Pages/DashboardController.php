@@ -12,7 +12,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // ── Real stats (expand these as you add more tables) ──────────────
+        // ── Real stats ────────────────────────────────────────────────────────
         $activeListings = Item::where('user_id', $user->id)
                               ->where('status', 'active')
                               ->count();
@@ -53,31 +53,51 @@ class DashboardController extends Controller
             ],
         ];
 
-        // ── User's active items (for the swap feed section) ───────────────
-        $myItems = Item::with('images')
-                       ->where('user_id', $user->id)
-                       ->where('status', 'active')
-                       ->latest()
-                       ->take(4)
-                       ->get()
-                       ->map(function ($item) {
-                           $primaryImage = $item->images->firstWhere('is_primary', true)
-                                        ?? $item->images->first();
-                           return [
-                               'id'       => $item->id,
-                               'title'    => $item->title,
-                               'category' => $item->category,
-                               'distance' => '—',
-                               'swapper'  => 'You',
-                               'initials' => 'ME',
-                               'color'    => '#ED730C',
-                               'image'    => $primaryImage
-                                             ? asset('storage/' . $primaryImage->path)
-                                             : null,
-                           ];
-                       });
+        // ── My Listings — real items with images ──────────────────────────────
+        $myListings = Item::with('images')
+            ->where('user_id', $user->id)
+            ->latest()
+            ->take(8)
+            ->get()
+            ->map(function ($item) {
+                $primaryImage = $item->images->firstWhere('is_primary', true)
+                             ?? $item->images->first();
+                return [
+                    'id'        => $item->id,
+                    'title'     => $item->title,
+                    'category'  => $item->category,
+                    'condition' => $item->condition,
+                    'desc'      => $item->description ?? '',
+                    'value'     => $item->estimated_value ?? 0,
+                    'wants'     => $item->looking_for ?? '',
+                    'status'    => $item->status ?? 'active',
+                    'views'     => $item->views ?? 0,
+                    'image'     => $primaryImage
+                                   ? asset('storage/' . $primaryImage->path)
+                                   : null,
+                ];
+            });
 
-        // ── User data (safe subset for frontend) ─────────────────────────
+        // ── Swap Requests — empty until SwapRequest model exists ──────────────
+        // TODO: Replace with real query once swap_requests table is created:
+        // $swapRequests = SwapRequest::with(['requester', 'offeredItem', 'wantedItem'])
+        //     ->where('target_user_id', $user->id)
+        //     ->where('status', 'pending')
+        //     ->latest()
+        //     ->take(6)
+        //     ->get()
+        //     ->map(fn($r) => [ ... ]);
+        $swapRequests = [];
+
+        // ── Smart Matches — empty until matching logic exists ──────────────────
+        // TODO: Replace with real match query
+        $smartMatches = [];
+
+        // ── Messages — empty until messages table exists ──────────────────────
+        // TODO: Replace with real query
+        $messages = [];
+
+        // ── User data (safe subset for frontend) ─────────────────────────────
         $userData = [
             'name'     => $user->name,
             'username' => $user->username,
@@ -85,6 +105,9 @@ class DashboardController extends Controller
             'avatar'   => null,
         ];
 
-        return view('pages.dashboard', compact('user', 'stats', 'myItems', 'userData'));
+        return view('pages.dashboard', compact(
+            'user', 'stats', 'myListings',
+            'swapRequests', 'smartMatches', 'messages', 'userData'
+        ));
     }
 }
