@@ -418,7 +418,7 @@
             </a>
 
             {{-- HOMES --}}
-            <a href="#"
+            <a href="{{route('homes')}}"
                class="nav-link {{ $currentRoute === 'homes' ? 'active' : '' }}">
                 <span class="nav-icon-wrap">
                     <img class="icon-inactive" src="{{ asset('images/icons/homes-inactive.png') }}" alt="">

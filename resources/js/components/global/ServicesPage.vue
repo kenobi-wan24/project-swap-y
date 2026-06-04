@@ -6,6 +6,8 @@ const allServices = ref(JSON.parse(el?.dataset.services || '[]'))
 
 // ── filter state ──────────────────────────────────────────────────────────────
 const activeCategory  = ref('All Services')
+const searchInput     = ref('')
+const locationInput   = ref('')
 const swapyMatchOnly  = ref(false)
 const filterEnabled   = ref(false)
 
@@ -56,101 +58,55 @@ function matchBadge(service) {
     <!-- ══════════════════════════════════════════
          HERO
     ══════════════════════════════════════════ -->
-    <div style="background:#fff;border-bottom:1px solid #f3f4f6;padding:56px 0 40px;">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 style="font-size:3rem;font-weight:800;color:#3A3330;line-height:1.05;margin-bottom:14px;">
-                Skills for Services<span style="color:#ED730C;">.</span>
-            </h1>
-            <p style="font-size:0.9375rem;color:#6b7280;max-width:400px;line-height:1.65;">
-                Swap your expertise for unique items or other professional services. No cash, just kinetic exchange.
-            </p>
+    <section style="padding:52px 24px 40px;background:#fff;text-align:center;border-bottom:1px solid #f3f4f6;">
+        <div style="max-width:860px;margin:0 auto;">
+            <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:28px;justify-content:center;">
+                <h1 style="font-size:clamp(2.2rem,5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.03em;color:#1A1A1A;margin:0;">Real skills.</h1>
+                <h1 style="font-size:clamp(2.2rem,5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.03em;color:#ED730C;margin:0;">Real people.</h1>
+            </div>
+
+            <!-- Desktop pill -->
+            <div class="svc-search-desktop" style="max-width:760px;margin:0 auto 20px;background:#fff;border-radius:999px;display:flex;align-items:center;padding:6px 6px 6px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1.5px solid #EBEBEB;">
+                <div style="flex:1;display:flex;align-items:center;gap:8px;border-right:1px solid #EBEBEB;padding-right:16px;">
+                    <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input v-model="searchInput" type="text" placeholder="What are you looking for?"
+                        style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:100%;">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:0 14px;">
+                    <svg width="13" height="13" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    <input v-model="locationInput" type="text" placeholder="Location"
+                        style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:110px;">
+                </div>
+                <button style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:12px 28px;font-size:0.875rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(237,115,12,0.4);"
+                    onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">Search</button>
+            </div>
+            <!-- Mobile pill -->
+            <div class="svc-search-mobile" style="display:none;max-width:760px;margin:0 auto 20px;background:#fff;border-radius:999px;align-items:center;padding:5px 5px 5px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.10);border:1.5px solid #EBEBEB;">
+                <svg width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:8px;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input v-model="searchInput" type="text" placeholder="Search"
+                    style="flex:1;border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;min-width:0;">
+                <div style="display:flex;align-items:center;gap:4px;padding:0 10px;border-left:1px solid #EBEBEB;flex-shrink:0;">
+                    <svg width="12" height="12" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    <input v-model="locationInput" type="text" placeholder="Location"
+                        style="border:none;outline:none;font-size:0.82rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:70px;">
+                </div>
+                <button style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:9px 18px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;">Search</button>
+            </div>
+            <!-- Filter pills -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+                <button v-for="cat in categories" :key="cat" @click="activeCategory = cat"
+                    :style="{padding:'7px 16px',borderRadius:'999px',fontSize:'0.78rem',fontWeight:'600',fontFamily:'\'DM Sans\',sans-serif',cursor:'pointer',border:activeCategory===cat?'none':'1px solid #EBEBEB',background:activeCategory===cat?'#1A1A1A':'#fff',color:activeCategory===cat?'#fff':'#4b5563',boxShadow:activeCategory===cat?'0 4px 12px rgba(0,0,0,0.15)':'none',transition:'all 0.15s'}">
+                    {{ cat }}
+                </button>
+            </div>
         </div>
-    </div>
+    </section>
 
     <!-- ══════════════════════════════════════════
          MAIN LAYOUT
     ══════════════════════════════════════════ -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style="padding-top:36px;padding-bottom:72px;">
         <div style="display:flex;gap:32px;align-items:flex-start;">
-
-            <!-- ════════════════════════════
-                 LEFT SIDEBAR
-            ════════════════════════════ -->
-            <aside style="width:210px;flex-shrink:0;display:none;" class="svc-sidebar">
-
-                <!-- Categories -->
-                <div style="margin-bottom:32px;">
-                    <p style="font-size:0.9375rem;font-weight:700;color:#3A3330;margin-bottom:14px;">Categories</p>
-                    <div style="display:flex;flex-direction:column;gap:1px;">
-                        <label
-                            v-for="cat in categories"
-                            :key="cat"
-                            style="display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer;"
-                        >
-                            <!-- Custom checkbox -->
-                            <span
-                                @click="activeCategory = cat"
-                                :style="{
-                                    width:'18px',height:'18px',borderRadius:'4px',flexShrink:'0',
-                                    border: activeCategory===cat ? 'none' : '1.5px solid #d1d5db',
-                                    background: activeCategory===cat ? '#ED730C' : '#fff',
-                                    display:'flex',alignItems:'center',justifyContent:'center',
-                                    cursor:'pointer',transition:'all .15s',
-                                }"
-                            >
-                                <svg v-if="activeCategory===cat" width="10" height="10" viewBox="0 0 12 10" fill="none">
-                                    <path d="M1 5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </span>
-                            <span
-                                @click="activeCategory = cat"
-                                :style="{
-                                    fontSize:'0.875rem',
-                                    fontWeight: activeCategory===cat ? '600':'400',
-                                    color: activeCategory===cat ? '#3A3330':'#4b5563',
-                                    cursor:'pointer',
-                                }"
-                            >{{ cat }}</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Match Type -->
-                <div>
-                    <p style="font-size:0.9375rem;font-weight:700;color:#3A3330;margin-bottom:14px;">Match Type</p>
-
-                    <!-- SWAPY MATCHES box -->
-                    <div style="border:1.5px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff;">
-                        <!-- Header row -->
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                            <span style="font-size:0.75rem;font-weight:800;color:#149189;letter-spacing:.06em;text-transform:uppercase;">Swapy Matches</span>
-                            <!-- Lightning bolt icon -->
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#ED730C">
-                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                            </svg>
-                        </div>
-                        <p style="font-size:0.78rem;color:#6b7280;line-height:1.5;margin-bottom:14px;">
-                            Show only providers interested in your current active swap items.
-                        </p>
-                        <!-- Enable Filter button -->
-                        <button
-                            @click="filterEnabled = !filterEnabled; swapyMatchOnly = filterEnabled"
-                            :style="{
-                                width:'100%',padding:'10px',borderRadius:'8px',border:'none',
-                                background: filterEnabled ? '#149189' : '#149189',
-                                color:'#fff',fontSize:'0.8125rem',fontWeight:'700',
-                                fontFamily:'\'DM Sans\',sans-serif',cursor:'pointer',
-                                transition:'background .15s',opacity: filterEnabled ? 1 : 1,
-                            }"
-                            onmouseover="this.style.background='#0e7a72'"
-                            onmouseout="this.style.background='#149189'"
-                        >
-                            {{ filterEnabled ? 'Filter Active ✓' : 'Enable Filter' }}
-                        </button>
-                    </div>
-                </div>
-
-            </aside>
 
             <!-- ════════════════════════════
                  SERVICES GRID
@@ -283,8 +239,9 @@ function matchBadge(service) {
 </div>
 </template>
 
-<style>
-@media (min-width: 768px) {
-    .svc-sidebar { display: block !important; }
+<style scoped>
+@media (max-width: 767px) {
+  .svc-search-desktop { display: none !important; }
+  .svc-search-mobile  { display: flex !important; }
 }
 </style>
