@@ -7,11 +7,12 @@ import AuthTabs       from './components/auth/Authtabs.vue'
 
 import BrowsePage     from './components/global/BrowsePage.vue'
 import HomesPage      from './components/global/HomesPage.vue'
-import GarageSalePage from './components/global/GarageSalePage.vue'
+import HomeDetailPage from './components/global/HomeDetailPage.vue'
+import GarageSalePage       from './components/global/GarageSalePage.vue'
+import GarageSaleDetailPage from './components/global/GarageSaleDetailPage.vue'
 import ServicesPage from './components/global/ServicesPage.vue'
 import ItemDetailPage from './components/global/ItemDetailPage.vue'
 import HowItWorksPage from './components/global/HowItWorks.vue'
-import HomeDetailPage from './components/global/HomeDetailPage.vue'
 
 import OnboardingFlow from './components/onboarding/OnboardingFlow.vue'
 import DashboardPage  from './components/global/DashboardPage.vue'
@@ -46,19 +47,24 @@ if (document.getElementById('homes-app')) {
     createApp(HomesPage).mount('#homes-app')
 }
 
+// Home Detail
+if (document.getElementById('home-detail-app')) {
+    createApp(HomeDetailPage).mount('#home-detail-app')
+}
+
 // Garage Sale
 if (document.getElementById('garage-sale-app')) {
     createApp(GarageSalePage).mount('#garage-sale-app')
 }
 
+// Garage Sale Detail
+if (document.getElementById('garage-sale-detail-app')) {
+    createApp(GarageSaleDetailPage).mount('#garage-sale-detail-app')
+}
+
 // Item Detail
 if (document.getElementById('item-detail-app')) {
     createApp(ItemDetailPage).mount('#item-detail-app')
-}
-
-// Home Detail
-if (document.getElementById('home-detail-app')) {
-    createApp(HomeDetailPage).mount('#home-detail-app')
 }
 
 // Services

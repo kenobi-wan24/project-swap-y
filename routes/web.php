@@ -4,7 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Pages\HomeController;
 use App\Http\Controllers\Pages\BrowseController;
 use App\Http\Controllers\Pages\GarageSaleController;
+use App\Http\Controllers\Pages\GarageSaleDetailController;
 use App\Http\Controllers\Pages\HomesController;
+use App\Http\Controllers\Pages\HomeDetailController;
 use App\Http\Controllers\Pages\ServicesController;
 use App\Http\Controllers\Pages\HowItWorksController;
 use App\Http\Controllers\Pages\ItemController;
@@ -12,7 +14,6 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Pages\OnboardingController;
 use App\Http\Controllers\Pages\DashboardController;
 use App\Http\Controllers\Pages\ProfileController;
-use App\Http\Controllers\Pages\HomeDetailController;
 
 Route::middleware('guest')->group(function () {  
     Route::get('/login',    [AuthController::class, 'showLogin'])->name('login');
@@ -28,13 +29,14 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 Route::get('/', fn() => redirect()->route('browse'))->name('home');
 Route::get('/browse',        [BrowseController::class,     'index'])->name('browse');
 Route::get('/homes',         [HomesController::class,      'index'])->name('homes');
-Route::get('/garage-sale',   [GarageSaleController::class, 'index'])->name('garage-sale');
+Route::get('/homes/{id}',    [HomeDetailController::class, 'show'])->name('homes.show');
+Route::get('/garage-sale',       [GarageSaleController::class,       'index'])->name('garage-sale');
+Route::get('/garage-sale/{id}',  [GarageSaleDetailController::class, 'show'])->name('garage-sale.show');
 Route::get('/services',      [ServicesController::class,   'index'])->name('services');
 Route::get('/how-it-works',  [HowItWorksController::class, 'index'])->name('how-it-works');
 Route::get('/item/{id}',     [ItemController::class,       'show'])->name('item.show');
 Route::get('/user/{username}',[ProfileController::class,   'show'])->name('user.profile');
 Route::get('/store/{username}',[ProfileController::class,  'store'])->name('user.store');
-Route::get('/homes/{id}', [HomeDetailController::class, 'show'])->name('homes.show');
 
 // Authenticated routes
 Route::middleware('auth')->group(function () {
