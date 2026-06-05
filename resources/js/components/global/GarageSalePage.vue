@@ -5,9 +5,10 @@ const el      = document.getElementById('garage-sale-app')
 const sellers = ref(JSON.parse(el?.dataset.sellers || '[]'))
 
 // ── filter state ──────────────────────────────────────────────────────────────
-const search  = ref('')
-const sortBy  = ref('Most Items')
-const loading = ref(false)
+const search        = ref('')
+const locationInput = ref('')
+const sortBy        = ref('Most Items')
+const loading       = ref(false)
 
 const sortOptions = ['Most Items', 'Nearest First', 'Recently Active', 'Highest Rated']
 
@@ -45,68 +46,65 @@ async function loadMore() {
 </script>
 
 <template>
-<div style="min-height:100vh;background:#FAF8F5;font-family:'DM Sans',sans-serif;">
+<div style="min-height:100vh;background:#fff;font-family:'DM Sans',sans-serif;">
 
   <!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
-  <section style="padding:72px 40px 56px;text-align:center;background:#fff;border-bottom:1px solid #EDE8E0;">
-    <div style="max-width:1280px;margin:0 auto;">
+  <section style="padding:52px 24px 40px;background:#fff;text-align:center;">
+    <div style="max-width:860px;margin:0 auto;">
 
       <!-- Headline -->
-      <h1 style="font-size:clamp(2rem,4vw,3rem);font-weight:900;color:#1A1A1A;line-height:1.1;letter-spacing:-.03em;margin:0 0 12px;">
-        Real people. <span style="color:#ED730C;">Real collections.</span>
-      </h1>
-      <p style="font-size:0.9375rem;color:#6b7280;line-height:1.65;margin:0 auto 32px;max-width:420px;">
-        Browse personal sales from people in your area and swap for something you'll actually love.
-      </p>
+      <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:28px;justify-content:center;">
+        <h1 style="font-size:clamp(2.2rem,5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.03em;color:#1A1A1A;margin:0;">Real people.</h1>
+        <h1 style="font-size:clamp(2.2rem,5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.03em;color:#ED730C;margin:0;">Real collections.</h1>
+      </div>
 
-      <!-- Search pill -->
-      <div style="background:#fff;border-radius:999px;display:flex;align-items:center;padding:7px 7px 7px 20px;box-shadow:0 4px 24px rgba(0,0,0,0.09);border:1.5px solid #EDE8E0;max-width:520px;margin:0 auto;">
-        <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input v-model="search" type="text" placeholder="Search by seller name or @username..."
-          style="flex:1;border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;margin:0 10px;">
-        <button v-if="search" @click="search=''"
-          style="width:28px;height:28px;border-radius:50%;background:#f3f4f6;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:4px;">
-          <svg width="10" height="10" fill="none" stroke="#9ca3af" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-        <button
-          style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:10px 24px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 4px 12px rgba(237,115,12,0.35);flex-shrink:0;"
-          onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">
-          Search
+      <!-- Desktop search pill -->
+      <div class="gs-search-desktop" style="max-width:760px;margin:0 auto 20px;background:#fff;border-radius:999px;display:flex;align-items:center;padding:6px 6px 6px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1.5px solid #EBEBEB;">
+        <div style="flex:1;display:flex;align-items:center;gap:8px;border-right:1px solid #EBEBEB;padding-right:16px;">
+          <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input v-model="search" type="text" placeholder="What are you looking for?"
+            style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:100%;">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:0 14px;">
+          <svg width="13" height="13" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          <input v-model="locationInput" type="text" placeholder="Location"
+            style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:110px;">
+        </div>
+        <button style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:12px 28px;font-size:0.875rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(237,115,12,0.4);"
+          onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">Search</button>
+      </div>
+
+      <!-- Mobile search pill -->
+      <div class="gs-search-mobile" style="display:none;max-width:760px;margin:0 auto 20px;background:#fff;border-radius:999px;align-items:center;padding:5px 5px 5px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.10);border:1.5px solid #EBEBEB;">
+        <svg width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:8px;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input v-model="search" type="text" placeholder="Search"
+          style="flex:1;border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;min-width:0;">
+        <div style="display:flex;align-items:center;gap:4px;padding:0 10px;border-left:1px solid #EBEBEB;flex-shrink:0;">
+          <svg width="12" height="12" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          <input v-model="locationInput" type="text" placeholder="Location"
+            style="border:none;outline:none;font-size:0.82rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:70px;">
+        </div>
+        <button style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:9px 18px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;">Search</button>
+      </div>
+
+      <!-- Sort pills -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+        <button v-for="opt in sortOptions" :key="opt" @click="sortBy = opt"
+          :style="{padding:'7px 16px',borderRadius:'999px',fontSize:'0.78rem',fontWeight:'600',fontFamily:'\'DM Sans\',sans-serif',cursor:'pointer',border:sortBy===opt?'none':'1px solid #EBEBEB',background:sortBy===opt?'#1A1A1A':'#fff',color:sortBy===opt?'#fff':'#4b5563',boxShadow:sortBy===opt?'0 4px 12px rgba(0,0,0,0.15)':'none',transition:'all 0.15s'}">
+          {{ opt }}
         </button>
       </div>
 
     </div>
   </section>
 
-  <!-- ══ FILTER + COUNT BAR ═════════════════════════════════════════════════ -->
-  <div style="background:#fff;border-bottom:1px solid #EDE8E0;padding:0 24px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
-    <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;">
-
-      <!-- Sort pills -->
-      <div style="display:flex;gap:2px;overflow-x:auto;">
-        <button v-for="opt in sortOptions" :key="opt" @click="sortBy = opt"
-          :style="{
-            padding:'13px 16px',background:'transparent',border:'none',
-            borderBottom: sortBy===opt ? '2.5px solid #ED730C' : '2.5px solid transparent',
-            color: sortBy===opt ? '#ED730C' : '#9ca3af',
-            fontSize:'0.8rem',fontWeight:'700',cursor:'pointer',
-            fontFamily:'\'DM Sans\',sans-serif',transition:'all .15s',
-            whiteSpace:'nowrap',letterSpacing:'.01em'
-          }">
-          {{ opt }}
-        </button>
-      </div>
-
-      <!-- Count -->
-      <p style="font-size:0.8rem;color:#9ca3af;margin:0;white-space:nowrap;flex-shrink:0;">
-        <strong style="color:#3A3330;">{{ filtered.length }}</strong> sales near you
-      </p>
-
-    </div>
-  </div>
-
   <!-- ══ SELLER GRID ═══════════════════════════════════════════════════════ -->
   <div style="max-width:1200px;margin:0 auto;padding:36px 24px 80px;">
+
+    <!-- Count -->
+    <p style="font-size:0.82rem;color:#9ca3af;margin-bottom:20px;">
+      Showing <strong style="color:#1a1a1a;">{{ filtered.length }}</strong> garage sales near you
+    </p>
 
     <!-- Grid -->
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px;">
@@ -229,6 +227,12 @@ async function loadMore() {
 </template>
 
 <style scoped>
+/* ── Mobile search pill ── */
+@media (max-width: 767px) {
+  .gs-search-desktop { display: none !important; }
+  .gs-search-mobile  { display: flex !important; }
+}
+
 /* ── Card hover ── */
 .gs-card {
   transition: border-color .2s, box-shadow .2s, transform .2s;
