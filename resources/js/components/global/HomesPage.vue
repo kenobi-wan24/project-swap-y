@@ -415,7 +415,7 @@ function toggleWish(id) {
             </div>
 
             <!-- CTA -->
-            <a :href="`/homes/${home.id}`"
+            <a :href="'/homes/' + home.id"
               style="display:block;margin-top:14px;padding:11px;background:#ED730C;color:#fff;border-radius:12px;font-size:0.82rem;font-weight:800;text-align:center;text-decoration:none;letter-spacing:.02em;transition:background .15s;box-shadow:0 4px 12px rgba(237,115,12,0.25);"
               onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">
               View Listing →

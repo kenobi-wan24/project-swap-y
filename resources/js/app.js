@@ -11,6 +11,7 @@ import GarageSalePage from './components/global/GarageSalePage.vue'
 import ServicesPage from './components/global/ServicesPage.vue'
 import ItemDetailPage from './components/global/ItemDetailPage.vue'
 import HowItWorksPage from './components/global/HowItWorks.vue'
+import HomeDetailPage from './components/global/HomeDetailPage.vue'
 
 import OnboardingFlow from './components/onboarding/OnboardingFlow.vue'
 import DashboardPage  from './components/global/DashboardPage.vue'
@@ -53,6 +54,11 @@ if (document.getElementById('garage-sale-app')) {
 // Item Detail
 if (document.getElementById('item-detail-app')) {
     createApp(ItemDetailPage).mount('#item-detail-app')
+}
+
+// Home Detail
+if (document.getElementById('home-detail-app')) {
+    createApp(HomeDetailPage).mount('#home-detail-app')
 }
 
 // Services

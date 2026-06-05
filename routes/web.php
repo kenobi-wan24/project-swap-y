@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Pages\OnboardingController;
 use App\Http\Controllers\Pages\DashboardController;
 use App\Http\Controllers\Pages\ProfileController;
+use App\Http\Controllers\Pages\HomeDetailController;
 
 Route::middleware('guest')->group(function () {  
     Route::get('/login',    [AuthController::class, 'showLogin'])->name('login');
@@ -33,6 +34,7 @@ Route::get('/how-it-works',  [HowItWorksController::class, 'index'])->name('how-
 Route::get('/item/{id}',     [ItemController::class,       'show'])->name('item.show');
 Route::get('/user/{username}',[ProfileController::class,   'show'])->name('user.profile');
 Route::get('/store/{username}',[ProfileController::class,  'store'])->name('user.store');
+Route::get('/homes/{id}', [HomeDetailController::class, 'show'])->name('homes.show');
 
 // Authenticated routes
 Route::middleware('auth')->group(function () {

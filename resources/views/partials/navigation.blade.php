@@ -418,7 +418,7 @@
             </a>
 
             {{-- HOMES --}}
-            <a href="#"
+            <a href="{{ route('homes') }}"
                class="nav-link {{ $currentRoute === 'homes' ? 'active' : '' }}">
                 <span class="nav-icon-wrap">
                     <img class="icon-inactive" src="{{ asset('images/icons/homes-inactive.png') }}" alt="">
@@ -729,7 +729,7 @@
     </a>
 
     {{-- Homes --}}
-    <a href="#" class="mob-tab {{ $currentRoute === 'homes' ? 'mob-tab--active' : '' }}">
+    <a href="{{ route('homes') }}" class="mob-tab {{ $currentRoute === 'homes' ? 'mob-tab--active' : '' }}">
         <span class="mob-tab-icon">
             <img class="icon-inactive" src="{{ asset('images/icons/homes-inactive.png') }}" alt="">
             <img class="icon-active"   src="{{ asset('images/icons/homes-active.png') }}"   alt="">
