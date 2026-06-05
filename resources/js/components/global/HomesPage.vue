@@ -1,8 +1,45 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const el     = document.getElementById('homes-app')
 const homes  = ref(JSON.parse(el?.dataset.homes || '[]'))
+
+// ── sticky search on scroll ────────────────────────────────────────────────────
+const heroSearchEl    = ref(null)
+const scrollY         = ref(0)
+function onScroll() {
+  scrollY.value = window.scrollY
+  const slot = document.getElementById('nav-sticky-search')
+  if (!slot) return
+  let threshold = 280
+  if (heroSearchEl.value) {
+    threshold = heroSearchEl.value.offsetTop + heroSearchEl.value.offsetHeight - 60
+  }
+  slot.classList.toggle('open', scrollY.value > threshold)
+}
+onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
+onUnmounted(() => window.removeEventListener('scroll', onScroll))
+
+// ── Nominatim geolocation ─────────────────────────────────────────────────────
+const cityName   = ref('Davao City')
+const areaName   = ref('Poblacion')
+onMounted(async () => {
+  try {
+    const pos = await new Promise((res, rej) =>
+      navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
+    )
+    const { latitude, longitude } = pos.coords
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+      { headers: { 'Accept-Language': 'en' } }
+    )
+    const data = await r.json()
+    const addr = data.address || {}
+    cityName.value = addr.city || addr.town || addr.municipality || 'Davao City'
+    areaName.value = addr.suburb || addr.neighbourhood || addr.quarter || addr.village || cityName.value
+
+  } catch { /* geolocation denied or unavailable */ }
+})
 
 // ── filter state ──────────────────────────────────────────────────────────────
 const search        = ref('')
@@ -10,10 +47,15 @@ const locationInput = ref('')
 const activeType    = ref('All')
 const activeBeds    = ref('Any')
 const sortBy        = ref('Newest')
+const viewMode      = ref('grid')
+const skeletonLoading = ref(false)
+const showSortDropdown = ref(false)
 
 const listingTypes = ['All', 'Swap', 'Rent', 'Sell', 'Co-living']
 const bedOptions   = ['Any', 'Studio', '1', '2', '3', '4+']
 const sortOptions  = ['Newest', 'Nearest First', 'Price: Low–High', 'Price: High–Low', 'Highest Rated']
+
+function closeAllPanels() { showSortDropdown.value = false }
 
 // ── fallback data ─────────────────────────────────────────────────────────────
 const fakeHomes = [
@@ -119,6 +161,108 @@ const fakeHomes = [
     listed_at: '2d ago',
     images: ['https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&q=80'],
   },
+  {
+    id: 7,
+    type: 'Rent',
+    title: 'Modern 1BR in Davao City CBD',
+    location: 'Davao City, Davao del Sur',
+    distance: '0.5',
+    beds: '1', baths: 1, sqm: 40,
+    value: 15000,
+    swap_terms: null,
+    tags: ['Fully furnished', 'Near mall', 'High-floor'],
+    rating: 4.8,
+    owner: 'Liza G.',
+    owner_initials: 'LG',
+    owner_color: '#ED730C',
+    listed_at: '1h ago',
+    images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80'],
+  },
+  {
+    id: 8,
+    type: 'Swap',
+    title: 'Cozy Studio in Davao City',
+    location: 'Matina, Davao City',
+    distance: '1.1',
+    beds: 'Studio', baths: 1, sqm: 28,
+    value: 12000,
+    swap_terms: 'Open to swap with condo near Ateneo de Davao',
+    tags: ['Pet-friendly', 'Near school', 'Parking'],
+    rating: 4.9,
+    owner: 'Ramon D.',
+    owner_initials: 'RD',
+    owner_color: '#14b8a6',
+    listed_at: '3h ago',
+    images: ['https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80'],
+  },
+  {
+    id: 9,
+    type: 'Sell',
+    title: 'Family Home in Davao City',
+    location: 'Buhangin, Davao City',
+    distance: '2.3',
+    beds: '3', baths: 2, sqm: 110,
+    value: 4800000,
+    swap_terms: null,
+    tags: ['With garden', 'Quiet village', 'Near airport'],
+    rating: 4.7,
+    owner: 'Fe C.',
+    owner_initials: 'FC',
+    owner_color: '#8b5cf6',
+    listed_at: 'Today',
+    images: ['https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80'],
+  },
+  {
+    id: 10,
+    type: 'Co-living',
+    title: 'Shared Space in Poblacion Davao',
+    location: 'Poblacion, Davao City',
+    distance: '0.3',
+    beds: '1', baths: 1, sqm: 20,
+    value: 7000,
+    swap_terms: 'Open to skill-swap',
+    tags: ['Fast WiFi', 'All utilities', 'Cowork space'],
+    rating: 4.9,
+    owner: 'Nadia P.',
+    owner_initials: 'NP',
+    owner_color: '#f59e0b',
+    listed_at: '30m ago',
+    images: ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&q=80'],
+  },
+  {
+    id: 11,
+    type: 'Rent',
+    title: '2BR Unit in Poblacion District',
+    location: 'Poblacion, Davao City',
+    distance: '0.6',
+    beds: '2', baths: 1, sqm: 55,
+    value: 20000,
+    swap_terms: null,
+    tags: ['Semi-furnished', 'City view', 'Near market'],
+    rating: 4.8,
+    owner: 'Jake M.',
+    owner_initials: 'JM',
+    owner_color: '#ec4899',
+    listed_at: '2h ago',
+    images: ['https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&q=80'],
+  },
+  {
+    id: 12,
+    type: 'Swap',
+    title: 'Loft-style Unit near Poblacion',
+    location: 'Poblacion, Davao City',
+    distance: '0.9',
+    beds: '1', baths: 1, sqm: 38,
+    value: 14000,
+    swap_terms: 'Swap for unit in Toril or Calinan area',
+    tags: ['Loft-style', 'Balcony', 'Fully furnished'],
+    rating: 5.0,
+    owner: 'Clara S.',
+    owner_initials: 'CS',
+    owner_color: '#149189',
+    listed_at: '4h ago',
+    images: ['https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&q=80'],
+  },
 ]
 
 const displayHomes = computed(() => homes.value.length ? homes.value : fakeHomes)
@@ -169,10 +313,71 @@ function toggleWish(id) {
   s.has(id) ? s.delete(id) : s.add(id)
   wishlisted.value = s
 }
+
+async function loadMore() {
+  skeletonLoading.value = true
+  await new Promise(r => setTimeout(r, 900))
+  skeletonLoading.value = false
+}
+
+// ── horizontal scroll sections (min 3 to show) ────────────────────────────────
+const MIN_ROW = 3
+
+const featuredHomes = computed(() => {
+  const list = displayHomes.value.filter(h => h.rating >= 4.8).slice(0, 10)
+  return list.length >= MIN_ROW ? list : []
+})
+
+const cityHomes = computed(() => {
+  if (!cityName.value) return []
+  const list = displayHomes.value
+    .filter(h => h.location.toLowerCase().includes(cityName.value.toLowerCase()))
+    .slice(0, 10)
+  return list.length >= MIN_ROW ? list : []
+})
+
+const areaHomes = computed(() => {
+  if (!areaName.value || areaName.value === cityName.value) return []
+  const list = displayHomes.value
+    .filter(h => h.location.toLowerCase().includes(areaName.value.toLowerCase()))
+    .slice(0, 10)
+  return list.length >= MIN_ROW ? list : []
+})
 </script>
 
 <template>
-<div style="min-height:100vh;background:#fff;font-family:DM Sans,sans-serif;">
+<div style="min-height:100vh;background:#FAF8F5;font-family:'DM Sans',sans-serif;" @click="closeAllPanels">
+
+  <!-- ══ STICKY NAV SEARCH ════════════════════════════════════════════════ -->
+  <Teleport to="#nav-sticky-search">
+    <div style="max-width:760px;margin:0 auto;" @click.stop>
+      <div class="hs-sticky-desktop" style="background:#fff;border-radius:999px;display:flex;align-items:center;padding:6px 6px 6px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1.5px solid #EBEBEB;">
+        <div style="flex:1;display:flex;align-items:center;gap:8px;border-right:1px solid #EBEBEB;padding-right:16px;">
+          <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input v-model="search" type="text" placeholder="What are you looking for?"
+            style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:100%;">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:0 14px;">
+          <svg width="13" height="13" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          <input v-model="locationInput" type="text" placeholder="Location"
+            style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:90px;">
+        </div>
+        <button style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:12px 28px;font-size:0.875rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(237,115,12,0.4);"
+          onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">Search</button>
+      </div>
+      <div class="hs-sticky-mobile" style="background:#fff;border-radius:999px;align-items:center;padding:5px 5px 5px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.10);border:1.5px solid #EBEBEB;">
+        <svg width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:8px;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input v-model="search" type="text" placeholder="Search"
+          style="flex:1;border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;min-width:0;">
+        <div style="display:flex;align-items:center;gap:4px;padding:0 10px;border-left:1px solid #EBEBEB;flex-shrink:0;">
+          <svg width="12" height="12" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          <input v-model="locationInput" type="text" placeholder="Location"
+            style="border:none;outline:none;font-size:0.82rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:70px;">
+        </div>
+        <button style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:9px 18px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;">Search</button>
+      </div>
+    </div>
+  </Teleport>
 
   <!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
   <section style="padding:52px 24px 28px;background:#fff;text-align:center;">
@@ -185,32 +390,34 @@ function toggleWish(id) {
       </div>
 
       <!-- Desktop search pill -->
-      <div class="hs-search-desktop" style="max-width:760px;margin:0 auto 20px;background:#fff;border-radius:999px;display:flex;align-items:center;padding:6px 6px 6px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1.5px solid #EBEBEB;">
-        <div style="flex:1;display:flex;align-items:center;gap:8px;border-right:1px solid #EBEBEB;padding-right:16px;">
-          <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-          <input v-model="search" type="text" placeholder="Search by location, city, or title..."
-            style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:100%;">
+      <div ref="heroSearchEl" class="hero-search-wrap" style="max-width:760px;margin:0 auto 20px;">
+        <div class="hs-search-desktop" style="background:#fff;border-radius:999px;display:flex;align-items:center;padding:6px 6px 6px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1.5px solid #EBEBEB;">
+          <div style="flex:1;display:flex;align-items:center;gap:8px;border-right:1px solid #EBEBEB;padding-right:16px;">
+            <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input v-model="search" type="text" placeholder="What are you looking for?"
+              style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:100%;">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:0 14px;">
+            <svg width="13" height="13" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            <input v-model="locationInput" type="text" placeholder="Location"
+              style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:110px;">
+          </div>
+          <button style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:12px 28px;font-size:0.875rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(237,115,12,0.4);"
+            onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">Search</button>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;padding:0 14px;">
-          <svg width="13" height="13" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-          <input v-model="locationInput" type="text" placeholder="Location"
-            style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:110px;">
-        </div>
-        <button style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:12px 28px;font-size:0.875rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(237,115,12,0.4);"
-          onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">Search</button>
-      </div>
 
-      <!-- Mobile search pill -->
-      <div class="hs-search-mobile" style="display:none;max-width:760px;margin:0 auto 20px;background:#fff;border-radius:999px;align-items:center;padding:5px 5px 5px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.10);border:1.5px solid #EBEBEB;">
-        <svg width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:8px;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input v-model="search" type="text" placeholder="Search"
-          style="flex:1;border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;min-width:0;">
-        <div style="display:flex;align-items:center;gap:4px;padding:0 10px;border-left:1px solid #EBEBEB;flex-shrink:0;">
-          <svg width="12" height="12" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-          <input v-model="locationInput" type="text" placeholder="Location"
-            style="border:none;outline:none;font-size:0.82rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:70px;">
+        <!-- Mobile search pill -->
+        <div class="hs-search-mobile" style="display:none;background:#fff;border-radius:999px;align-items:center;padding:5px 5px 5px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.10);border:1.5px solid #EBEBEB;">
+          <svg width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:8px;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input v-model="search" type="text" placeholder="Search"
+            style="flex:1;border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;min-width:0;">
+          <div style="display:flex;align-items:center;gap:4px;padding:0 10px;border-left:1px solid #EBEBEB;flex-shrink:0;">
+            <svg width="12" height="12" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            <input v-model="locationInput" type="text" placeholder="Location"
+              style="border:none;outline:none;font-size:0.82rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:70px;">
+          </div>
+          <button style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:9px 18px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;">Search</button>
         </div>
-        <button style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:9px 18px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;">Search</button>
       </div>
 
       <!-- Listing type pills -->
@@ -224,30 +431,189 @@ function toggleWish(id) {
     </div>
   </section>
 
+  <!-- ══ FEATURED HOMES ══════════════════════════════════════════════════ -->
+  <section v-if="featuredHomes.length" class="hs-scroll-section">
+    <div style="max-width:1280px;margin:0 auto;padding:0 40px;">
+      <div class="hs-section-header">
+        <div>
+          <p class="hs-section-label">Top Picks</p>
+          <h2 class="hs-section-title">Featured Homes</h2>
+        </div>
+        <a href="#" class="hs-see-all">See all →</a>
+      </div>
+      <div class="hs-hscroll">
+        <div v-for="home in featuredHomes" :key="'feat-'+home.id" class="hs-hscroll-card">
+          <div class="home-card" style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;box-shadow:0 2px 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;height:100%;"
+            onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,0.12)';this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.boxShadow='0 2px 12px rgba(0,0,0,0.06)';this.style.transform='translateY(0)'">
+            <div style="position:relative;aspect-ratio:16/10;overflow:hidden;background:#f3f4f6;flex-shrink:0;">
+              <img v-if="home.images && home.images[0]" :src="home.images[0]" :alt="home.title"
+                style="width:100%;height:100%;object-fit:cover;transition:transform .4s;"
+                onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
+              <span :style="{position:'absolute',top:'12px',left:'12px',background:typeCfg[home.type]?.bg,color:typeCfg[home.type]?.color,border:`1.5px solid ${typeCfg[home.type]?.border}`,fontSize:'0.62rem',fontWeight:'800',padding:'4px 11px',borderRadius:'999px',letterSpacing:'.07em',textTransform:'uppercase'}">{{ home.type }}</span>
+              <span style="position:absolute;bottom:10px;right:12px;font-size:0.62rem;font-weight:700;color:#fff;background:rgba(0,0,0,0.42);padding:3px 9px;border-radius:999px;backdrop-filter:blur(4px);">{{ home.listed_at }}</span>
+            </div>
+            <div style="padding:16px 18px 18px;display:flex;flex-direction:column;flex:1;">
+              <h3 style="font-size:0.95rem;font-weight:800;color:#1A1A1A;margin:0 0 4px;line-height:1.3;letter-spacing:-.01em;">{{ home.title }}</h3>
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:12px;">
+                <svg width="11" height="11" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span style="font-size:0.75rem;color:#9ca3af;font-weight:600;">{{ home.location }} · {{ home.distance }} mi</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid #F3F0EC;border-bottom:1px solid #F3F0EC;margin-bottom:12px;">
+                <span style="font-size:0.78rem;font-weight:700;color:#3a3a3a;">{{ home.beds === 'Studio' ? 'Studio' : home.beds + ' bed' }}</span>
+                <span style="font-size:0.78rem;font-weight:700;color:#3a3a3a;">{{ home.baths }} bath</span>
+                <span style="font-size:0.78rem;font-weight:700;color:#3a3a3a;">{{ home.sqm }} m²</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;">
+                <p style="font-size:1.05rem;font-weight:900;color:#1A1A1A;margin:0;">{{ formatValue(home) }}</p>
+                <div style="display:flex;align-items:center;gap:3px;">
+                  <svg width="11" height="11" fill="#f59e0b" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <span style="font-size:0.78rem;font-weight:700;color:#6b7280;">{{ home.rating }}</span>
+                </div>
+              </div>
+              <a :href="`/homes/${home.id}`" style="display:block;margin-top:14px;padding:11px;background:#ED730C;color:#fff;border-radius:12px;font-size:0.82rem;font-weight:800;text-align:center;text-decoration:none;letter-spacing:.02em;transition:background .15s;box-shadow:0 4px 12px rgba(237,115,12,0.25);"
+                onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">View Listing →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ HOMES IN CITY ══════════════════════════════════════════════════ -->
+  <section v-if="cityHomes.length" class="hs-scroll-section">
+    <div style="max-width:1280px;margin:0 auto;padding:0 40px;">
+      <div class="hs-section-header">
+        <div>
+          <p class="hs-section-label">By Location</p>
+          <h2 class="hs-section-title">Listings in {{ cityName }}</h2>
+        </div>
+        <a href="#" class="hs-see-all">See all →</a>
+      </div>
+      <div class="hs-hscroll">
+        <div v-for="home in cityHomes" :key="'city-'+home.id" class="hs-hscroll-card">
+          <div class="home-card" style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;box-shadow:0 2px 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;height:100%;"
+            onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,0.12)';this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.boxShadow='0 2px 12px rgba(0,0,0,0.06)';this.style.transform='translateY(0)'">
+            <div style="position:relative;aspect-ratio:16/10;overflow:hidden;background:#f3f4f6;flex-shrink:0;">
+              <img v-if="home.images && home.images[0]" :src="home.images[0]" :alt="home.title"
+                style="width:100%;height:100%;object-fit:cover;transition:transform .4s;"
+                onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
+              <span :style="{position:'absolute',top:'12px',left:'12px',background:typeCfg[home.type]?.bg,color:typeCfg[home.type]?.color,border:`1.5px solid ${typeCfg[home.type]?.border}`,fontSize:'0.62rem',fontWeight:'800',padding:'4px 11px',borderRadius:'999px',letterSpacing:'.07em',textTransform:'uppercase'}">{{ home.type }}</span>
+              <span style="position:absolute;bottom:10px;right:12px;font-size:0.62rem;font-weight:700;color:#fff;background:rgba(0,0,0,0.42);padding:3px 9px;border-radius:999px;backdrop-filter:blur(4px);">{{ home.listed_at }}</span>
+            </div>
+            <div style="padding:16px 18px 18px;display:flex;flex-direction:column;flex:1;">
+              <h3 style="font-size:0.95rem;font-weight:800;color:#1A1A1A;margin:0 0 4px;line-height:1.3;letter-spacing:-.01em;">{{ home.title }}</h3>
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:12px;">
+                <svg width="11" height="11" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span style="font-size:0.75rem;color:#9ca3af;font-weight:600;">{{ home.location }} · {{ home.distance }} mi</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid #F3F0EC;border-bottom:1px solid #F3F0EC;margin-bottom:12px;">
+                <span style="font-size:0.78rem;font-weight:700;color:#3a3a3a;">{{ home.beds === 'Studio' ? 'Studio' : home.beds + ' bed' }}</span>
+                <span style="font-size:0.78rem;font-weight:700;color:#3a3a3a;">{{ home.baths }} bath</span>
+                <span style="font-size:0.78rem;font-weight:700;color:#3a3a3a;">{{ home.sqm }} m²</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;">
+                <p style="font-size:1.05rem;font-weight:900;color:#1A1A1A;margin:0;">{{ formatValue(home) }}</p>
+                <div style="display:flex;align-items:center;gap:3px;">
+                  <svg width="11" height="11" fill="#f59e0b" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <span style="font-size:0.78rem;font-weight:700;color:#6b7280;">{{ home.rating }}</span>
+                </div>
+              </div>
+              <a :href="`/homes/${home.id}`" style="display:block;margin-top:14px;padding:11px;background:#ED730C;color:#fff;border-radius:12px;font-size:0.82rem;font-weight:800;text-align:center;text-decoration:none;letter-spacing:.02em;transition:background .15s;box-shadow:0 4px 12px rgba(237,115,12,0.25);"
+                onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">View Listing →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ HOMES NEAR AREA ════════════════════════════════════════════════ -->
+  <section v-if="areaHomes.length" class="hs-scroll-section">
+    <div style="max-width:1280px;margin:0 auto;padding:0 40px;">
+      <div class="hs-section-header">
+        <div>
+          <p class="hs-section-label">Near You</p>
+          <h2 class="hs-section-title">Homes near {{ areaName }}</h2>
+        </div>
+        <a href="#" class="hs-see-all">See all →</a>
+      </div>
+      <div class="hs-hscroll">
+        <div v-for="home in areaHomes" :key="'area-'+home.id" class="hs-hscroll-card">
+          <div class="home-card" style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;box-shadow:0 2px 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;height:100%;"
+            onmouseover="this.style.boxShadow='0 8px 32px rgba(0,0,0,0.12)';this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.boxShadow='0 2px 12px rgba(0,0,0,0.06)';this.style.transform='translateY(0)'">
+            <div style="position:relative;aspect-ratio:16/10;overflow:hidden;background:#f3f4f6;flex-shrink:0;">
+              <img v-if="home.images && home.images[0]" :src="home.images[0]" :alt="home.title"
+                style="width:100%;height:100%;object-fit:cover;transition:transform .4s;"
+                onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
+              <span :style="{position:'absolute',top:'12px',left:'12px',background:typeCfg[home.type]?.bg,color:typeCfg[home.type]?.color,border:`1.5px solid ${typeCfg[home.type]?.border}`,fontSize:'0.62rem',fontWeight:'800',padding:'4px 11px',borderRadius:'999px',letterSpacing:'.07em',textTransform:'uppercase'}">{{ home.type }}</span>
+              <span style="position:absolute;bottom:10px;right:12px;font-size:0.62rem;font-weight:700;color:#fff;background:rgba(0,0,0,0.42);padding:3px 9px;border-radius:999px;backdrop-filter:blur(4px);">{{ home.listed_at }}</span>
+            </div>
+            <div style="padding:16px 18px 18px;display:flex;flex-direction:column;flex:1;">
+              <h3 style="font-size:0.95rem;font-weight:800;color:#1A1A1A;margin:0 0 4px;line-height:1.3;letter-spacing:-.01em;">{{ home.title }}</h3>
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:12px;">
+                <svg width="11" height="11" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span style="font-size:0.75rem;color:#9ca3af;font-weight:600;">{{ home.location }} · {{ home.distance }} mi</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid #F3F0EC;border-bottom:1px solid #F3F0EC;margin-bottom:12px;">
+                <span style="font-size:0.78rem;font-weight:700;color:#3a3a3a;">{{ home.beds === 'Studio' ? 'Studio' : home.beds + ' bed' }}</span>
+                <span style="font-size:0.78rem;font-weight:700;color:#3a3a3a;">{{ home.baths }} bath</span>
+                <span style="font-size:0.78rem;font-weight:700;color:#3a3a3a;">{{ home.sqm }} m²</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;">
+                <p style="font-size:1.05rem;font-weight:900;color:#1A1A1A;margin:0;">{{ formatValue(home) }}</p>
+                <div style="display:flex;align-items:center;gap:3px;">
+                  <svg width="11" height="11" fill="#f59e0b" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <span style="font-size:0.78rem;font-weight:700;color:#6b7280;">{{ home.rating }}</span>
+                </div>
+              </div>
+              <a :href="`/homes/${home.id}`" style="display:block;margin-top:14px;padding:11px;background:#ED730C;color:#fff;border-radius:12px;font-size:0.82rem;font-weight:800;text-align:center;text-decoration:none;letter-spacing:.02em;transition:background .15s;box-shadow:0 4px 12px rgba(237,115,12,0.25);"
+                onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">View Listing →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ══ MAIN CONTENT ═══════════════════════════════════════════════════════ -->
-  <section style="padding:16px 40px 64px;">
+  <section style="padding:24px 40px 64px;">
     <div style="max-width:1280px;margin:0 auto;">
 
       <!-- Section label -->
       <div style="margin-bottom:24px;">
         <p style="font-size:0.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ED730C;margin:0 0 4px;">
-          {{ activeType === 'All' ? 'All Listings' : activeType + ' Listings' }}
+          All Homes
         </p>
         <h2 style="font-size:1.35rem;font-weight:900;color:#1A1A1A;margin:0;letter-spacing:-.02em;">
-          Homes Near You
+          {{ activeType === 'All' ? 'All Listings' : activeType + ' Listings' }}
         </h2>
       </div>
 
+      <!-- Skeleton loading -->
+      <div v-if="skeletonLoading" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;">
+        <div v-for="n in 6" :key="n"
+          style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;">
+          <div style="aspect-ratio:16/10;background:linear-gradient(90deg,#f0ece6 25%,#e8e3dc 50%,#f0ece6 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;"></div>
+          <div style="padding:16px 18px 18px;">
+            <div style="height:14px;background:#f0ece6;border-radius:6px;margin-bottom:8px;width:70%;animation:shimmer 1.4s infinite;"></div>
+            <div style="height:11px;background:#f0ece6;border-radius:6px;width:45%;animation:shimmer 1.4s infinite;"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Empty state -->
-      <div v-if="filtered.length === 0"
+      <div v-else-if="filtered.length === 0"
         style="background:#fff;border-radius:20px;border:1px solid #EDE8E0;padding:72px 40px;text-align:center;">
         <div style="font-size:2.5rem;margin-bottom:12px;">🏠</div>
         <p style="font-size:0.9rem;font-weight:700;color:#1A1A1A;margin:0 0 4px;">No listings found</p>
         <p style="font-size:0.8rem;color:#9ca3af;margin:0;">Try adjusting your filters or search terms.</p>
       </div>
 
-      <!-- Card grid -->
-      <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;">
+      <!-- ── GRID VIEW ── -->
+      <div v-else-if="filtered.length > 0" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;">
 
         <div v-for="home in filtered" :key="home.id" class="home-card"
           style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;box-shadow:0 2px 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;cursor:pointer;transition:box-shadow .2s,transform .2s;"
@@ -331,7 +697,7 @@ function toggleWish(id) {
               </span>
             </div>
 
-            <!-- Swap terms (only for Swap + Co-living) -->
+            <!-- Swap terms -->
             <div v-if="home.swap_terms"
               style="background:#FFF4EC;border:1px solid #fed7aa;border-radius:10px;padding:8px 12px;margin-bottom:14px;display:flex;align-items:flex-start;gap:7px;">
               <svg width="13" height="13" fill="none" stroke="#ED730C" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px;"><path d="M7 16l-4-4 4-4M17 8l4 4-4 4M14 4l-4 16"/></svg>
@@ -364,7 +730,7 @@ function toggleWish(id) {
             </div>
 
             <!-- CTA -->
-            <a :href="'/homes/' + home.id"
+            <a :href="`/homes/${home.id}`"
               style="display:block;margin-top:14px;padding:11px;background:#ED730C;color:#fff;border-radius:12px;font-size:0.82rem;font-weight:800;text-align:center;text-decoration:none;letter-spacing:.02em;transition:background .15s;box-shadow:0 4px 12px rgba(237,115,12,0.25);"
               onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">
               View Listing →
@@ -374,6 +740,18 @@ function toggleWish(id) {
         </div>
 
       </div>
+
+      <!-- Load more -->
+      <div v-if="!skeletonLoading && filtered.length > 0" style="text-align:center;margin-top:48px;">
+        <button @click="loadMore"
+          style="display:inline-flex;align-items:center;gap:8px;padding:13px 36px;background:#fff;border:1.5px solid #1A1A1A;border-radius:999px;font-size:0.82rem;font-weight:800;color:#1A1A1A;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:.04em;transition:background .15s,color .15s;"
+          onmouseover="this.style.background='#1A1A1A';this.style.color='#fff'"
+          onmouseout="this.style.background='#fff';this.style.color='#1A1A1A'">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M19 9l-7 7-7-7"/></svg>
+          Load More
+        </button>
+      </div>
+
     </div>
   </section>
 
@@ -383,5 +761,45 @@ function toggleWish(id) {
 @media (max-width: 767px) {
   .hs-search-desktop { display: none !important; }
   .hs-search-mobile  { display: flex !important; }
+  .hs-sticky-desktop { display: none !important; }
+  .hs-sticky-mobile  { display: flex !important; }
+}
+.hs-sticky-mobile { display: none; }
+
+/* ── Horizontal scroll sections ── */
+.hs-scroll-section { padding: 0 0 48px; background: #fff; }
+.hs-section-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; padding-top: 40px; }
+.hs-section-label  { font-size: 0.65rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #ED730C; margin: 0 0 4px; }
+.hs-section-title  { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 900; color: #1A1A1A; margin: 0; letter-spacing: -.02em; }
+.hs-see-all        { font-size: 0.82rem; font-weight: 700; color: #ED730C; text-decoration: none; white-space: nowrap; margin-top: 6px; }
+.hs-see-all:hover  { text-decoration: underline; }
+
+.hs-hscroll {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 22px * 2) / 3);
+  gap: 22px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.hs-hscroll::-webkit-scrollbar { display: none; }
+.hs-hscroll { scrollbar-width: none; }
+.hs-hscroll-card { min-width: 0; }
+
+@media (max-width: 767px) {
+  .hs-hscroll { grid-auto-columns: calc((100% - 22px) / 1.2); }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hs-hscroll { grid-auto-columns: calc((100% - 22px) / 2); }
+}
+@media (min-width: 1024px) {
+  .hs-hscroll { grid-auto-columns: calc((100% - 22px * 2) / 3); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 </style>
+
