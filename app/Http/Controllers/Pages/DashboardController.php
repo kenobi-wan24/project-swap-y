@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Pages;
 
 use App\Http\Controllers\Controller;
 use App\Models\Item;
+use App\Models\Home;
+use App\Models\GarageSale;
+use App\Models\Service;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -105,9 +108,104 @@ class DashboardController extends Controller
             'avatar'   => null,
         ];
 
+        // ── All listings, grouped by type (for the "My Listings" tab) ─────────
+        $listings = [
+            'items'       => $this->mapItems(Item::with('images')->where('user_id', $user->id)->latest()->get()),
+            'homes'       => $this->mapHomes(Home::with('images')->where('user_id', $user->id)->latest()->get()),
+            'garageSales' => $this->mapGarageSales(GarageSale::withCount('items')->where('user_id', $user->id)->latest()->get()),
+            'services'    => $this->mapServices(Service::with('images')->where('user_id', $user->id)->latest()->get()),
+        ];
+
         return view('pages.dashboard', compact(
-            'user', 'stats', 'myListings',
+            'user', 'stats', 'myListings', 'listings',
             'swapRequests', 'smartMatches', 'messages', 'userData'
         ));
+    }
+
+    private function mapItems($rows)
+    {
+        return $rows->map(function ($it) {
+            $img = $it->images->firstWhere('is_primary', true) ?? $it->images->first();
+            return [
+                'id'          => $it->id,
+                'title'       => $it->title,
+                'image'       => $img ? asset('storage/' . $img->path) : null,
+                'category'    => $it->category,
+                'meta'        => ucwords(str_replace('_', ' ', $it->condition ?? '')),
+                'price_label' => $it->estimated_value ? '₱' . number_format($it->estimated_value) : null,
+                'status'      => $it->status ?? 'active',
+                'is_promoted' => (bool) ($it->is_promoted ?? false),
+                'url'         => '/item/' . $it->id,
+                'created_at'  => $it->created_at->diffForHumans(),
+                'description' => $it->description ?? '',
+                'price'       => $it->estimated_value,
+            ];
+        })->values();
+    }
+
+    private function mapHomes($rows)
+    {
+        return $rows->map(function ($h) {
+            $img   = $h->images->firstWhere('is_primary', true) ?? $h->images->first();
+            $beds  = $h->beds ? ($h->beds === 'Studio' ? 'Studio' : $h->beds . ' bed') : '';
+            $meta  = trim($beds . ($h->baths ? ' · ' . $h->baths . ' bath' : ''), ' ·');
+            $price = $h->value ? ($h->type === 'Sell' ? '₱' . number_format($h->value) : '₱' . number_format($h->value) . '/mo') : null;
+            return [
+                'id'          => $h->id,
+                'title'       => $h->title,
+                'image'       => $img ? asset('storage/' . $img->path) : null,
+                'category'    => $h->type,
+                'meta'        => $meta,
+                'price_label' => $price,
+                'status'      => $h->status ?? 'active',
+                'is_promoted' => (bool) $h->is_promoted,
+                'url'         => '/homes/' . $h->id,
+                'created_at'  => $h->created_at->diffForHumans(),
+                'description' => $h->description ?? '',
+                'price'       => $h->value,
+            ];
+        })->values();
+    }
+
+    private function mapGarageSales($rows)
+    {
+        return $rows->map(function ($g) {
+            return [
+                'id'          => $g->id,
+                'title'       => $g->title,
+                'image'       => $g->cover_image ? asset('storage/' . $g->cover_image) : null,
+                'category'    => 'Garage Sale',
+                'meta'        => $g->items_count . ' item' . ($g->items_count === 1 ? '' : 's'),
+                'price_label' => null,
+                'status'      => $g->status ?? 'active',
+                'is_promoted' => (bool) $g->is_promoted,
+                'url'         => '/garage-sale/' . $g->id,
+                'created_at'  => $g->created_at->diffForHumans(),
+                'description' => $g->description ?? '',
+                'price'       => null,
+            ];
+        })->values();
+    }
+
+    private function mapServices($rows)
+    {
+        return $rows->map(function ($s) {
+            $img   = $s->images->firstWhere('is_primary', true) ?? $s->images->first();
+            $price = $s->rate ? '₱' . number_format($s->rate) . ($s->rate_type ? ' · ' . $s->rate_type : '') : null;
+            return [
+                'id'          => $s->id,
+                'title'       => $s->title,
+                'image'       => $img ? asset('storage/' . $img->path) : null,
+                'category'    => $s->category,
+                'meta'        => $s->delivery,
+                'price_label' => $price,
+                'status'      => $s->status ?? 'active',
+                'is_promoted' => (bool) $s->is_promoted,
+                'url'         => '/services/' . $s->id,
+                'created_at'  => $s->created_at->diffForHumans(),
+                'description' => $s->description ?? '',
+                'price'       => $s->rate,
+            ];
+        })->values();
     }
 }

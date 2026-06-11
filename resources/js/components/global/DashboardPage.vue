@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import PostItemModal from '../dashboard/PostItemModal.vue'
+import ListingsBoard from './ListingsBoard.vue'
 
 // ── dataset helpers ────────────────────────────────────────────────────────────
 const el = document.getElementById('dashboard-app')
@@ -35,21 +35,16 @@ const stats = ref(rawStats.map(s => ({
   bg:    s.bg              || bgMap[s.key]    || '#FFF4EC',
 })))
 
-// Reactive active-listings counter (so it updates when user posts a new item)
-const activeListingsStat = computed(() => stats.value.find(s => s.icon === 'box'))
-
-// ── quick actions — "List an Item" opens modal, rest are links ─────────────────
-const showPostModal = ref(false)
-
+// ── quick actions — all link to dedicated create pages ────────────────────────
+// Order mirrors the navbar: Items → Homes → Garage Sale → Services
 const quickActions = [
-  { label:'List an Item',      icon:'plus',   color:'#fff', bg:'#ED730C', action:'modal'                  },
-  { label:'Start Garage Sale', icon:'store',  color:'#fff', bg:'#149189', href:'/garage-sale/create'      },
-  { label:'Offer a Service',   icon:'wrench', color:'#fff', bg:'#8b5cf6', href:'/services/create'         },
-  { label:'Smart Match',       icon:'zap',    color:'#fff', bg:'#f59e0b', href:'/matches'                 },
+  { label:'List an Item',      icon:'plus',   color:'#fff', bg:'#ED730C', href:'/items/create'       },
+  { label:'Add Home',          icon:'home',   color:'#fff', bg:'#2563eb', href:'/homes/create'       },
+  { label:'Start Garage Sale', icon:'store',  color:'#fff', bg:'#149189', href:'/garage-sale/create' },
+  { label:'Offer a Service',   icon:'wrench', color:'#fff', bg:'#8b5cf6', href:'/services/create'    },
 ]
 
 function handleQuickAction(a) {
-  if (a.action === 'modal') { showPostModal.value = true; return }
   if (a.href) window.location.href = a.href
 }
 
@@ -61,27 +56,8 @@ const swapRequests = ref(ds('swapRequests', '[]'))
 //                       looking_for, status, views, image }, ...]
 const myListings = ref(ds('myListings', '[]'))
 
-// When PostItemModal emits 'posted', prepend the new item and bump the stat
-function onItemPosted(item) {
-  showPostModal.value = false
-  // Normalise the shape returned by /items (matches what the controller sends)
-  myListings.value.unshift({
-    id:        item.id,
-    title:     item.title,
-    category:  item.category,
-    condition: item.condition,
-    desc:      item.description || '',
-    value:     item.estimated_value || 0,
-    wants:     item.looking_for || '',
-    status:    'active',
-    views:     0,
-    image:     item.primary_image || null,
-  })
-  // Bump the active listings stat reactively
-  if (activeListingsStat.value) {
-    activeListingsStat.value.value = String(Number(activeListingsStat.value.value) + 1)
-  }
-}
+// All listings grouped by type (for the "My Listings" tab)
+const listings = ref(ds('listings', '{}'))
 
 const statusCfg = {
   active:  { label:'Active',  color:'#149189', bg:'#EDFAF9' },
@@ -112,20 +88,14 @@ const navSections = [
   { key:'messages', label:'Messages'    },
   { key:'matches',  label:'Matches'     },
 ]
+
 </script>
 
 <template>
-<div style="min-height:100vh;background:#FAF8F5;font-family:'DM Sans',sans-serif;">
-
-  <!-- ══ POST ITEM MODAL ════════════════════════════════════════════════════ -->
-  <PostItemModal
-    v-if="showPostModal"
-    @close="showPostModal = false"
-    @posted="onItemPosted"
-  />
+<div style="min-height:100vh;background:#fff;font-family:'DM Sans',sans-serif;">
 
   <!-- ══ HERO / WELCOME BANNER ══════════════════════════════════════════════ -->
-  <section style="position:relative;overflow:hidden;padding:52px 40px 44px;">
+  <section class="dash-hero" style="position:relative;overflow:hidden;">
 
     <!-- BG image -->
     <div style="position:absolute;inset:0;z-index:0;">
@@ -170,18 +140,18 @@ const navSections = [
       </div>
 
       <!-- Stats -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;">
+      <div class="dash-stats" style="margin-bottom:28px;">
         <div v-for="s in stats" :key="s.label"
-          style="background:rgba(255,255,255,0.82);backdrop-filter:blur(8px);border:1px solid rgba(237,232,224,0.7);border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+          style="background:rgba(255,255,255,0.82);backdrop-filter:blur(8px);border:1px solid rgba(237,232,224,0.7);border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,0.06);min-width:0;">
           <div :style="{width:'38px',height:'38px',borderRadius:'10px',background:s.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}">
             <svg v-if="s.icon==='box'" width="17" height="17" fill="none" :stroke="s.color" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 10V11"/></svg>
             <svg v-if="s.icon==='swap'" width="17" height="17" fill="none" :stroke="s.color" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
             <svg v-if="s.icon==='lightning'" width="17" height="17" :fill="s.color" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             <svg v-if="s.icon==='star'" width="17" height="17" :fill="s.color" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
           </div>
-          <div>
+          <div style="min-width:0;">
             <p style="font-size:1.25rem;font-weight:900;margin:0;line-height:1;" :style="{color:s.color}">{{ s.value }}</p>
-            <p style="font-size:0.72rem;font-weight:600;color:#9ca3af;margin:3px 0 0;white-space:nowrap;">{{ s.label }}</p>
+            <p style="font-size:0.72rem;font-weight:600;color:#9ca3af;margin:3px 0 0;line-height:1.25;">{{ s.label }}</p>
           </div>
         </div>
       </div>
@@ -193,7 +163,7 @@ const navSections = [
           <svg v-if="a.icon==='plus'"   width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <svg v-if="a.icon==='store'"  width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l1-5h16l1 5v1a2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 01-2 2 2 2 0 01-2-2V9zm2 5v6h14v-6"/></svg>
           <svg v-if="a.icon==='wrench'" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-          <svg v-if="a.icon==='zap'"    width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <svg v-if="a.icon==='home'"   width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1V9.5z"/></svg>
           {{ a.label }}
         </button>
       </div>
@@ -201,8 +171,8 @@ const navSections = [
   </section>
 
   <!-- ══ SUB-NAV ═══════════════════════════════════════════════════════════ -->
-  <div style="background:#fff;border-bottom:1px solid #EDE8E0;padding:0 40px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
-    <div style="max-width:1200px;margin:0 auto;display:flex;gap:0;">
+  <div class="dash-subnav-outer" style="background:#fff;border-bottom:1px solid #EDE8E0;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+    <div class="dash-subnav" style="max-width:1200px;margin:0 auto;">
       <button v-for="s in navSections" :key="s.key" @click="activeSection=s.key"
         :style="{padding:'13px 18px',background:'transparent',border:'none',borderBottom:activeSection===s.key?'2.5px solid #ED730C':'2.5px solid transparent',color:activeSection===s.key?'#ED730C':'#9ca3af',fontSize:'0.82rem',fontWeight:'700',cursor:'pointer',fontFamily:'\'DM Sans\',sans-serif',transition:'all .15s'}">
         {{ s.label }}
@@ -213,7 +183,18 @@ const navSections = [
   </div>
 
   <!-- ══ BODY ═══════════════════════════════════════════════════════════════ -->
-  <div style="max-width:1200px;margin:0 auto;padding:44px 40px 80px;">
+  <div class="dash-body" style="max-width:1200px;margin:0 auto;">
+
+    <!-- My Listings — all types, grouped (shown via the "My Listings" tab) -->
+    <ListingsBoard
+      v-if="activeSection === 'listings'"
+      :items="listings.items || []"
+      :homes="listings.homes || []"
+      :garage-sales="listings.garageSales || []"
+      :services="listings.services || []"
+    />
+
+    <template v-else>
 
     <!-- ── SWAP REQUESTS ── -->
     <section style="margin-bottom:52px;">
@@ -234,7 +215,7 @@ const navSections = [
         <p style="font-size:0.9rem;font-weight:700;color:#1A1A1A;margin:0 0 4px;">No pending swap requests</p>
         <p style="font-size:0.8rem;color:#9ca3af;margin:0;">When someone wants to swap with you, they'll appear here.</p>
       </div>
-      <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;">
+      <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:14px;">
         <div v-for="req in swapRequests" :key="req.id" class="swapy-card"
           style="background:#fff;border-radius:18px;border:1px solid #EDE8E0;box-shadow:0 4px 16px rgba(0,0,0,0.06);padding:18px 20px;">
 
@@ -317,12 +298,12 @@ const navSections = [
           <h2 style="font-size:1.5rem;font-weight:900;color:#1A1A1A;margin:0;letter-spacing:-.02em;">My Active Listings</h2>
         </div>
         <div style="display:flex;gap:10px;align-items:center;">
-          <a href="/listings" style="font-size:0.8rem;font-weight:700;color:#9ca3af;text-decoration:none;">View all →</a>
-          <button @click="showPostModal = true" class="btn-addnew"
-            style="display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:#ED730C;color:#fff;border-radius:999px;font-size:0.8rem;font-weight:800;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 4px 12px rgba(237,115,12,0.28);">
+          <button @click="activeSection='listings'" style="font-size:0.8rem;font-weight:700;color:#9ca3af;background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;">View all →</button>
+          <a href="/items/create" class="btn-addnew"
+            style="display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:#ED730C;color:#fff;border-radius:999px;font-size:0.8rem;font-weight:800;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 4px 12px rgba(237,115,12,0.28);text-decoration:none;">
             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add New
-          </button>
+          </a>
         </div>
       </div>
 
@@ -331,13 +312,13 @@ const navSections = [
         <div style="font-size:2.5rem;margin-bottom:12px;">📦</div>
         <p style="font-size:0.9rem;font-weight:700;color:#1A1A1A;margin:0 0 4px;">No listings yet</p>
         <p style="font-size:0.8rem;color:#9ca3af;margin:0 0 20px;">Start by posting your first item to swap.</p>
-        <button @click="showPostModal = true"
-          style="display:inline-flex;align-items:center;gap:7px;padding:10px 22px;background:#ED730C;color:#fff;border-radius:999px;font-size:0.82rem;font-weight:800;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;">
+        <a href="/items/create"
+          style="display:inline-flex;align-items:center;gap:7px;padding:10px 22px;background:#ED730C;color:#fff;border-radius:999px;font-size:0.82rem;font-weight:800;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;">
           <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Post Your First Item
-        </button>
+        </a>
       </div>
-      <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:18px;">
+      <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(255px,100%),1fr));gap:18px;">
         <div v-for="item in myListings" :key="item.id" class="swapy-card"
           style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;box-shadow:0 4px 18px rgba(0,0,0,0.07);display:flex;flex-direction:column;">
 
@@ -364,7 +345,7 @@ const navSections = [
               <span style="font-size:0.62rem;font-weight:700;color:#149189;background:#EDFAF9;padding:2px 7px;border-radius:4px;">{{ item.condition }}</span>
             </div>
             <h3 style="font-size:0.9375rem;font-weight:800;color:#1A1A1A;line-height:1.3;margin:0 0 4px;">{{ item.title }}</h3>
-            <p style="font-size:0.78rem;color:#9ca3af;margin:0 0 10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;">{{ item.desc }}</p>
+            <p style="font-size:0.78rem;color:#9ca3af;margin:0 0 10px;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;">{{ item.desc }}</p>
             <div style="background:#FFF4EC;border-radius:8px;padding:6px 10px;margin-bottom:14px;flex:1;">
               <p style="font-size:0.58rem;font-weight:800;letter-spacing:.07em;color:#c4a882;text-transform:uppercase;margin:0 0 1px;">Wants in exchange</p>
               <p style="font-size:0.76rem;font-weight:700;color:#ED730C;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ item.wants }}</p>
@@ -400,7 +381,7 @@ const navSections = [
         <p style="font-size:0.9rem;font-weight:700;color:#1A1A1A;margin:0 0 4px;">No matches yet</p>
         <p style="font-size:0.8rem;color:#9ca3af;margin:0;">Post items to start getting AI-powered swap suggestions.</p>
       </div>
-      <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:18px;">
+      <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(255px,100%),1fr));gap:18px;">
         <div v-for="item in smartMatches" :key="item.id" class="swapy-card"
           style="background:#fff;border-radius:20px;overflow:hidden;border:1px solid #EDE8E0;box-shadow:0 4px 18px rgba(0,0,0,0.07);display:flex;flex-direction:column;">
 
@@ -421,7 +402,7 @@ const navSections = [
               <span style="font-size:0.62rem;font-weight:700;color:#149189;background:#EDFAF9;padding:2px 7px;border-radius:4px;">{{ item.condition }}</span>
             </div>
             <h3 style="font-size:0.9375rem;font-weight:800;color:#1A1A1A;line-height:1.3;margin:0 0 4px;">{{ item.title }}</h3>
-            <p style="font-size:0.78rem;color:#9ca3af;margin:0 0 12px;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;">{{ item.desc }}</p>
+            <p style="font-size:0.78rem;color:#9ca3af;margin:0 0 12px;flex:1;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;">{{ item.desc }}</p>
             <div style="display:flex;align-items:center;gap:7px;margin-bottom:13px;padding-top:10px;border-top:1px solid #f3f4f6;">
               <div style="position:relative;width:34px;height:24px;flex-shrink:0;">
                 <div :style="{width:'24px',height:'24px',borderRadius:'50%',background:item.avatarColor,color:'#fff',fontSize:'0.58rem',fontWeight:'800',display:'flex',alignItems:'center',justifyContent:'center',position:'absolute',left:'0',zIndex:2,border:'1.5px solid #fff'}">{{ item.avatar }}</div>
@@ -473,11 +454,35 @@ const navSections = [
       </div>
     </section>
 
+    </template>
   </div>
 </div>
 </template>
 
 <style scoped>
+/* ── Dashboard responsive layout ── */
+.dash-hero         { padding: 52px 40px 44px; }
+.dash-subnav-outer { padding: 0 40px; }
+.dash-body         { padding: 44px 40px 80px; }
+.dash-stats        { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+/* Sub-nav becomes a scrollable tab strip instead of overflowing the page */
+.dash-subnav { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; }
+.dash-subnav::-webkit-scrollbar { display: none; }
+.dash-subnav > button { flex-shrink: 0; white-space: nowrap; }
+
+@media (max-width: 1024px) {
+  .dash-hero         { padding: 44px 28px 36px; }
+  .dash-subnav-outer { padding: 0 28px; }
+  .dash-body         { padding: 36px 28px 72px; }
+}
+@media (max-width: 768px) {
+  .dash-hero         { padding: 32px 18px 28px; }
+  .dash-subnav-outer { padding: 0 12px; }
+  .dash-body         { padding: 30px 18px 60px; }
+  .dash-stats        { grid-template-columns: repeat(2, 1fr); }
+}
+
 .swapy-card { transition: border-color .2s, box-shadow .2s, transform .2s; }
 .swapy-card:hover { border-color:#ED730C !important; box-shadow:0 10px 36px rgba(237,115,12,0.12) !important; transform:translateY(-3px); }
 .swapy-card:hover .card-img { transform:scale(1.06); }

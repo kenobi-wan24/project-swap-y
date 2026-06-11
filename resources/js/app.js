@@ -8,9 +8,13 @@ import AuthTabs       from './components/auth/Authtabs.vue'
 import BrowsePage     from './components/global/BrowsePage.vue'
 import HomesPage      from './components/global/HomesPage.vue'
 import HomeDetailPage from './components/global/HomeDetailPage.vue'
+import HomeCreatePage from './components/global/HomeCreatePage.vue'
 import GarageSalePage       from './components/global/GarageSalePage.vue'
 import GarageSaleDetailPage from './components/global/GarageSaleDetailPage.vue'
+import GarageSaleCreatePage from './components/global/GarageSaleCreatePage.vue'
+import ItemCreatePage        from './components/global/ItemCreatePage.vue'
 import ServicesPage from './components/global/ServicesPage.vue'
+import ServiceCreatePage from './components/global/ServiceCreatePage.vue'
 import ItemDetailPage from './components/global/ItemDetailPage.vue'
 import HowItWorksPage from './components/global/HowItWorks.vue'
 
@@ -52,6 +56,11 @@ if (document.getElementById('home-detail-app')) {
     createApp(HomeDetailPage).mount('#home-detail-app')
 }
 
+// Home Create
+if (document.getElementById('home-create-app')) {
+    createApp(HomeCreatePage).mount('#home-create-app')
+}
+
 // Garage Sale
 if (document.getElementById('garage-sale-app')) {
     createApp(GarageSalePage).mount('#garage-sale-app')
@@ -60,6 +69,16 @@ if (document.getElementById('garage-sale-app')) {
 // Garage Sale Detail
 if (document.getElementById('garage-sale-detail-app')) {
     createApp(GarageSaleDetailPage).mount('#garage-sale-detail-app')
+}
+
+// Garage Sale Create
+if (document.getElementById('garage-sale-create-app')) {
+    createApp(GarageSaleCreatePage).mount('#garage-sale-create-app')
+}
+
+// Item Create
+if (document.getElementById('item-create-app')) {
+    createApp(ItemCreatePage).mount('#item-create-app')
 }
 
 // Item Detail
@@ -72,6 +91,11 @@ if (document.getElementById('services-app')) {
     createApp(ServicesPage, {
         services: JSON.parse(document.getElementById('services-app')?.dataset.services || '[]'),
     }).mount('#services-app')
+}
+
+// Service Create
+if (document.getElementById('service-create-app')) {
+    createApp(ServiceCreatePage).mount('#service-create-app')
 }
 
 // How it works

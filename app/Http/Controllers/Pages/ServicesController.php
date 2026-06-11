@@ -3,10 +3,70 @@
 namespace App\Http\Controllers\Pages;
 
 use App\Http\Controllers\Controller;
+use App\Models\Service;
+use App\Models\ServiceImage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ServicesController extends Controller
 {
+    public function create()
+    {
+        return view('pages.service-create');
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'title'       => ['required', 'string', 'max:255'],
+            'category'    => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string'],
+            'rate'        => ['nullable', 'integer', 'min:0'],
+            'rate_type'   => ['nullable', 'string', 'max:40'],
+            'delivery'    => ['required', 'in:Remote,In-person,Both'],
+            'swap_for'    => ['nullable', 'string'],
+            'tags'        => ['nullable', 'array'],
+            'tags.*'      => ['string', 'max:40'],
+            'location'    => ['nullable', 'string', 'max:500'],
+            'latitude'    => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude'   => ['nullable', 'numeric', 'between:-180,180'],
+            'images'      => ['nullable', 'array', 'max:6'],
+            'images.*'    => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ]);
+
+        $service = Service::create([
+            'user_id'     => Auth::id(),
+            'title'       => $validated['title'],
+            'category'    => $validated['category'],
+            'description' => $validated['description'] ?? null,
+            'rate'        => $validated['rate'] ?? null,
+            'rate_type'   => $validated['rate_type'] ?? null,
+            'delivery'    => $validated['delivery'],
+            'swap_for'    => $validated['swap_for'] ?? null,
+            'tags'        => $validated['tags'] ?? [],
+            'location'    => $validated['location'] ?? null,
+            'latitude'    => $validated['latitude'] ?? null,
+            'longitude'   => $validated['longitude'] ?? null,
+            'status'      => 'active',
+        ]);
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $file) {
+                $path = $file->store('services', 'public');
+                ServiceImage::create([
+                    'service_id' => $service->id,
+                    'path'       => $path,
+                    'is_primary' => $index === 0,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'service' => $service->load('images'),
+        ]);
+    }
+
     public function index(Request $request)
     {
         /*

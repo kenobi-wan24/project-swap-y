@@ -11,10 +11,56 @@ use Illuminate\Support\Facades\Storage;
 
 class ItemController extends Controller
 {
+    public function create()
+    {
+        return view('pages.item-create');
+    }
+
     public function show($id)
     {
-        $item = Item::with(['images', 'user'])->findOrFail($id);
-        return view('pages.item', compact('item'));
+        $item  = Item::with(['images', 'user'])->findOrFail($id);
+        $owner = $item->user;
+
+        $images = $item->images
+            ->sortByDesc('is_primary')
+            ->map(fn ($img) => asset('storage/' . $img->path))
+            ->values()
+            ->all();
+
+        $lookingFor = collect(preg_split('/[,\n]+/', $item->looking_for ?? ''))
+            ->map(fn ($s) => trim($s))
+            ->filter()
+            ->values()
+            ->all();
+
+        $initials = collect(explode(' ', trim($owner->name ?? 'Member')))
+            ->filter()
+            ->take(2)
+            ->map(fn ($p) => strtoupper(substr($p, 0, 1)))
+            ->implode('');
+
+        $data = [
+            'id'          => $item->id,
+            'title'       => $item->title,
+            'category'    => $item->category,
+            'condition'   => ucwords(str_replace('_', ' ', $item->condition ?? '')),
+            'description' => $item->description,
+            'value'       => $item->estimated_value,
+            'location'    => $item->location,
+            'looking_for' => $lookingFor,
+            'images'      => $images,
+            'created_at'  => $item->created_at->diffForHumans(),
+            'is_promoted' => (bool) $item->is_promoted,
+            'is_own'      => auth()->id() === $item->user_id,
+            'owner'       => [
+                'name'         => $owner->name ?? 'Member',
+                'username'     => $owner->username ?? null,
+                'initials'     => $initials ?: 'M',
+                'member_since' => optional($owner->created_at)->format('M Y'),
+            ],
+        ];
+
+        return view('pages.item', ['item' => $data]);
     }
 
     public function store(Request $request)
