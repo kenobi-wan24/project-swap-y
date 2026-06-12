@@ -76,7 +76,7 @@ class DashboardController extends Controller
                     'status'    => $item->status ?? 'active',
                     'views'     => $item->views ?? 0,
                     'image'     => $primaryImage
-                                   ? asset('storage/' . $primaryImage->path)
+                                   ? media_url($primaryImage->path)
                                    : null,
                 ];
             });
@@ -129,7 +129,7 @@ class DashboardController extends Controller
             return [
                 'id'          => $it->id,
                 'title'       => $it->title,
-                'image'       => $img ? asset('storage/' . $img->path) : null,
+                'image'       => $img ? media_url($img->path) : null,
                 'category'    => $it->category,
                 'meta'        => ucwords(str_replace('_', ' ', $it->condition ?? '')),
                 'price_label' => $it->estimated_value ? '₱' . number_format($it->estimated_value) : null,
@@ -153,7 +153,7 @@ class DashboardController extends Controller
             return [
                 'id'          => $h->id,
                 'title'       => $h->title,
-                'image'       => $img ? asset('storage/' . $img->path) : null,
+                'image'       => $img ? media_url($img->path) : null,
                 'category'    => $h->type,
                 'meta'        => $meta,
                 'price_label' => $price,
@@ -173,7 +173,7 @@ class DashboardController extends Controller
             return [
                 'id'          => $g->id,
                 'title'       => $g->title,
-                'image'       => $g->cover_image ? asset('storage/' . $g->cover_image) : null,
+                'image'       => media_url($g->cover_image),
                 'category'    => 'Garage Sale',
                 'meta'        => $g->items_count . ' item' . ($g->items_count === 1 ? '' : 's'),
                 'price_label' => null,
@@ -195,7 +195,7 @@ class DashboardController extends Controller
             return [
                 'id'          => $s->id,
                 'title'       => $s->title,
-                'image'       => $img ? asset('storage/' . $img->path) : null,
+                'image'       => $img ? media_url($img->path) : null,
                 'category'    => $s->category,
                 'meta'        => $s->delivery,
                 'price_label' => $price,

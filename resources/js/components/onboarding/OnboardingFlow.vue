@@ -1,6 +1,7 @@
 <script setup>
 // filepath: resources/js/components/onboarding/OnboardingFlow.vue
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { ITEM_CATEGORIES } from '../../constants/categories'
 
 // ── entrance animation ────────────────────────────────────────────────────────
 const mounted = ref(false)
@@ -30,29 +31,38 @@ function goBack() {
 }
 
 // ── STEP 1: preferences ───────────────────────────────────────────────────────
-const categories = [
-    { id: 'electronics', label: 'Electronics' },
-    { id: 'clothing',    label: 'Clothing'    },
-    { id: 'furniture',   label: 'Furniture'   },
-    { id: 'books',       label: 'Books'       },
-    { id: 'sports',      label: 'Sports'      },
-    { id: 'services',    label: 'Services'    },
-    { id: 'diy',         label: 'DIY'         },
-    { id: 'art',         label: 'Art'         },
-]
-const selectedCategories = ref(['electronics', 'furniture'])
+// Same canonical list used by the item form and browse filters, so a
+// preference here always lines up with real listing categories.
+const categories = ITEM_CATEGORIES
+const selectedCategories = ref([])
 
-function toggleCategory(id) {
-    const i = selectedCategories.value.indexOf(id)
-    if (i === -1) selectedCategories.value.push(id)
+function toggleCategory(cat) {
+    const i = selectedCategories.value.indexOf(cat)
+    if (i === -1) selectedCategories.value.push(cat)
     else selectedCategories.value.splice(i, 1)
 }
-function isCategorySelected(id) {
-    return selectedCategories.value.includes(id)
+function isCategorySelected(cat) {
+    return selectedCategories.value.includes(cat)
 }
 
-const valueMin     = ref(0)
-const valueMax     = ref(1000)
+// Value range: matches the browse filter scale ($0–$5,000)
+const VALUE_CAP   = 5000
+const valueMin    = ref(0)
+const valueMax    = ref(VALUE_CAP)
+
+// keep min ≤ max no matter which slider is dragged
+function onMinInput() {
+    if (valueMin.value > valueMax.value) valueMax.value = valueMin.value
+}
+function onMaxInput() {
+    if (valueMax.value < valueMin.value) valueMin.value = valueMax.value
+}
+
+const valueRangeLabel = computed(() => {
+    if (valueMin.value === 0 && valueMax.value === VALUE_CAP) return 'Any value'
+    return `$${Number(valueMin.value).toLocaleString()} – $${Number(valueMax.value).toLocaleString()}`
+})
+
 const maxDistance  = ref(25)
 const notification = ref('balanced')
 
@@ -96,9 +106,9 @@ async function finishOnboarding() {
             },
             body: JSON.stringify({
                 categories:             selectedCategories.value,
-                value_min:              valueMin.value,
-                value_max:              valueMax.value,
-                max_distance:           maxDistance.value,
+                value_min:              Number(valueMin.value),
+                value_max:              Number(valueMax.value),
+                max_distance:           Number(maxDistance.value),
                 notification_frequency: notification.value,
                 intent:                 intent.value,
             }),
@@ -153,46 +163,66 @@ function trackStyle(val, min, max) {
                 key="step1"
                 style="width:100%;max-width:640px;padding:40px 24px 32px;"
             >
-                <h1 style="font-size:2.125rem;font-weight:800;color:#3A3330;text-align:center;margin-bottom:36px;line-height:1.2;">
+                <h1 style="font-size:2.125rem;font-weight:800;color:#3A3330;text-align:center;margin-bottom:10px;line-height:1.2;">
                     What do you like to swap?
                 </h1>
+                <p style="font-size:0.92rem;color:#6b7280;text-align:center;margin:0 auto 36px;max-width:440px;line-height:1.5;">
+                    These preferences power the <strong style="color:#ED730C;">Match %</strong> you'll see on every listing — the closer a swap fits them, the higher it scores.
+                </p>
 
                 <!-- Categories -->
                 <div style="margin-bottom:40px;">
-                    <p style="font-size:0.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;margin-bottom:14px;">Categories</p>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">
+                        <p style="font-size:0.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;margin:0;">Categories</p>
+                        <p style="font-size:0.78rem;font-weight:600;color:#9ca3af;margin:0;">
+                            {{ selectedCategories.length ? selectedCategories.length + ' selected' : 'Pick what you love' }}
+                        </p>
+                    </div>
                     <div style="display:flex;flex-wrap:wrap;gap:10px;">
                         <button
                             v-for="cat in categories"
-                            :key="cat.id"
-                            @click="toggleCategory(cat.id)"
+                            :key="cat"
+                            @click="toggleCategory(cat)"
                             :style="{
                                 padding: '8px 18px',
                                 borderRadius: '999px',
-                                border: isCategorySelected(cat.id) ? '2px solid #ED730C' : '1.5px solid #e5e7eb',
-                                background: isCategorySelected(cat.id) ? '#ED730C' : '#fff',
-                                color: isCategorySelected(cat.id) ? '#fff' : '#3A3330',
+                                border: isCategorySelected(cat) ? '2px solid #ED730C' : '1.5px solid #e5e7eb',
+                                background: isCategorySelected(cat) ? '#ED730C' : '#fff',
+                                color: isCategorySelected(cat) ? '#fff' : '#3A3330',
                                 fontWeight: '600',
                                 fontSize: '0.875rem',
                                 cursor: 'pointer',
                                 fontFamily: `'DM Sans', sans-serif`,
                                 transition: 'all .15s',
                             }"
-                        >{{ cat.label }}</button>
+                        >{{ cat }}</button>
                     </div>
+                    <p style="font-size:0.78rem;color:#9ca3af;margin-top:10px;">
+                        Listings in your categories get a Match % boost. Skip this to treat every category equally.
+                    </p>
                 </div>
 
                 <!-- Value Range -->
                 <div style="margin-bottom:32px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                         <p style="font-size:0.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;">Preferred Value Range</p>
-                        <p style="font-size:0.875rem;font-weight:700;color:#3A3330;">${{ valueMin }} – ${{ valueMax }}</p>
+                        <p style="font-size:0.875rem;font-weight:700;color:#3A3330;">{{ valueRangeLabel }}</p>
                     </div>
-                    <input type="range" min="0" max="1000" v-model="valueMin" :style="trackStyle(valueMin, 0, 1000)" style="margin-bottom:8px;">
-                    <input type="range" min="0" max="1000" v-model="valueMax" :style="trackStyle(valueMax, 0, 1000)">
-                    <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                        <span style="font-size:0.72rem;font-weight:700;color:#9ca3af;width:30px;">Min</span>
+                        <input type="range" min="0" :max="VALUE_CAP" step="50" v-model.number="valueMin" @input="onMinInput" :style="trackStyle(valueMin, 0, VALUE_CAP)" style="flex:1;">
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:0.72rem;font-weight:700;color:#9ca3af;width:30px;">Max</span>
+                        <input type="range" min="0" :max="VALUE_CAP" step="50" v-model.number="valueMax" @input="onMaxInput" :style="trackStyle(valueMax, 0, VALUE_CAP)" style="flex:1;">
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-top:4px;padding-left:40px;">
                         <span style="font-size:0.75rem;color:#9ca3af;">$0</span>
-                        <span style="font-size:0.75rem;color:#9ca3af;">$1000</span>
+                        <span style="font-size:0.75rem;color:#9ca3af;">${{ VALUE_CAP.toLocaleString() }}</span>
                     </div>
+                    <p style="font-size:0.78rem;color:#9ca3af;margin-top:8px;">
+                        Swaps valued inside this range score higher. Leave it at full range if value doesn't matter to you.
+                    </p>
                 </div>
 
                 <!-- Max Distance -->
@@ -201,7 +231,7 @@ function trackStyle(val, min, max) {
                         <p style="font-size:0.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;">Max Distance</p>
                         <p style="font-size:0.875rem;font-weight:700;color:#ED730C;">{{ maxDistance }} Miles</p>
                     </div>
-                    <input type="range" min="1" max="100" v-model="maxDistance" :style="trackStyle(maxDistance, 1, 100)">
+                    <input type="range" min="1" max="100" v-model.number="maxDistance" :style="trackStyle(maxDistance, 1, 100)">
                     <p style="font-size:0.78rem;color:#6b7280;margin-top:8px;">Show me items within <strong>{{ maxDistance }} Miles</strong></p>
                 </div>
 

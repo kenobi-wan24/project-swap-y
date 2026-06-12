@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
+import { ITEM_CATEGORIES_WITH_OTHER } from '../../constants/categories'
 
 // ── step state ────────────────────────────────────────────────────────────────
 const currentStep = ref(1)
@@ -53,7 +54,7 @@ const geocoding      = ref(false)
 let leafletMap    = null
 let leafletMarker = null
 
-const categories = ['Electronics', 'Clothing', 'Furniture', 'Books', 'Sports', 'Services', 'DIY', 'Art', 'Other']
+const categories = ITEM_CATEGORIES_WITH_OTHER
 const conditions = [
   { value: 'new',      label: 'New'      },
   { value: 'like_new', label: 'Like New' },
@@ -191,7 +192,7 @@ async function postItem() {
         <img :src="imagePreviews[primaryIndex]" alt="Your item photo" style="width:100%;height:100%;object-fit:cover;">
       </div>
 
-      <a href="/browse"    style="display:block;width:100%;padding:14px;background:#ED730C;color:#fff;font-size:0.9rem;font-weight:700;border-radius:12px;text-decoration:none;margin-bottom:10px;box-sizing:border-box;text-align:center;">Browse Items</a>
+      <a href="/items"     style="display:block;width:100%;padding:14px;background:#ED730C;color:#fff;font-size:0.9rem;font-weight:700;border-radius:12px;text-decoration:none;margin-bottom:10px;box-sizing:border-box;text-align:center;">Browse Items</a>
       <a href="/dashboard" style="display:block;width:100%;padding:14px;background:#fff;color:#3A3330;font-size:0.9rem;font-weight:700;border:1.5px solid #EDE8E0;border-radius:12px;text-decoration:none;box-sizing:border-box;text-align:center;">Back to Dashboard</a>
     </div>
   </div>

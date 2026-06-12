@@ -1,10 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ITEM_CATEGORIES } from '../../constants/categories'
 
 // ref for the hero search bar element
 const heroSearchEl = ref(null)
 
-const el       = document.getElementById('browse-app')
+const el       = document.getElementById('items-app')
 const allItems = ref(JSON.parse(el?.dataset.listings || '[]'))
 
 function parseDataset(key) {
@@ -22,51 +23,38 @@ function onScroll() {
   if (heroSearchEl.value) {
     threshold = heroSearchEl.value.offsetTop + heroSearchEl.value.offsetHeight - 60
   }
-  slot.classList.toggle('open', scrollY.value > threshold)
+  // Hysteresis: open past the hero, close only well before it — no flicker
+  const isOpen = slot.classList.contains('open')
+  if (!isOpen && scrollY.value > threshold + 40) slot.classList.add('open')
+  else if (isOpen && scrollY.value < threshold - 40) slot.classList.remove('open')
 }
 onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
 // ── Nominatim geolocation (OpenStreetMap) ─────────────────────────────────────
-const cityName    = ref('')
-const areaName    = ref('')
-const nearbyCity  = ref('')
-const nearbyCityItems = ref([])
+const cityName   = ref('')
+const areaName   = ref('')
+const nearbyCity = ref('General Santos')
+const userLat    = ref(null)
+const userLng    = ref(null)
 
 onMounted(async () => {
   try {
     const pos = await new Promise((res, rej) =>
       navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
     )
-    const { latitude, longitude } = pos.coords
+    userLat.value = pos.coords.latitude
+    userLng.value = pos.coords.longitude
     const r = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+      `https://nominatim.openstreetmap.org/reverse?lat=${userLat.value}&lon=${userLng.value}&format=json`,
       { headers: { 'Accept-Language': 'en' } }
     )
     const data = await r.json()
     const addr = data.address || {}
     cityName.value = addr.city || addr.town || addr.municipality || ''
     areaName.value = addr.suburb || addr.neighbourhood || addr.quarter || addr.village || cityName.value
-
-    // ── resolve nearby city from backend ──────────────────────────────────────
-    // Pass user's city to a backend endpoint that returns the nearest city
-    // with enough listings. Falls back to dataset if already provided.
-    const preloadedNearby = parseDataset('nearbyCity')
-    if (preloadedNearby.length) {
-      nearbyCity.value  = el?.dataset.nearbyCityName || ''
-      nearbyCityItems.value = preloadedNearby
-    } else {
-      // client-side fallback: pick from mock data if no backend
-      nearbyCity.value      = 'General Santos'
-      nearbyCityItems.value = nearbyCityItemsFallback
-    }
   } catch {
-    cityName.value        = ''
-    areaName.value        = ''
-    nearbyCity.value      = el?.dataset.nearbyCityName || ''
-    nearbyCityItems.value = parseDataset('nearbyCity').length
-      ? parseDataset('nearbyCity')
-      : nearbyCityItemsFallback
+    // geolocation denied — sections fall back to recent listings
   }
 })
 
@@ -78,12 +66,11 @@ const activeTab     = ref('All')
 const valueMax    = ref(5000)
 const sortBy      = ref('Recent First')
 const viewMode    = ref('grid')
-const skeletonLoading = ref(false)
 
 const showFiltersPanel = ref(false)
 const showSortDropdown = ref(false)
 
-const categories  = ['All', 'Electronics', 'Clothing', 'Collectibles', 'Furniture', 'Books', 'Outdoor', 'Gaming', 'Photography', 'Home', 'Fashion']
+const categories  = ['All', ...ITEM_CATEGORIES]
 const sortOptions = ['Recent First', 'Value: Low to High', 'Value: High to Low', 'Best Match']
 
 function closeAllPanels() {
@@ -91,64 +78,47 @@ function closeAllPanels() {
   showSortDropdown.value = false
 }
 
-// ── section data pools ─────────────────────────────────────────────────────────
-const featuredItems = ref((() => {
-  const real = parseDataset('featured')
-  return real.length ? real : [
-    { id:'f1', category:'Electronics', condition:'Like New', title:'iPhone 14 Pro Max 256GB', wants:'Gaming Laptop',     value:900,  badge:'Featured', match:92, owner:'Marcus C.', avatar:'MC', avatarColor:'#ED730C', image:'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&q=80' },
-    { id:'f2', category:'Gaming',      condition:'Good',     title:'ASUS ROG Gaming Laptop',  wants:'iPhone or MacBook', value:1200, badge:'Featured', match:85, owner:'Juno K.',  avatar:'JK', avatarColor:'#8b5cf6', image:'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600&q=80' },
-    { id:'f3', category:'Photography', condition:'Like New', title:'Sony A7 III Full Frame',  wants:'Canon R5 / Lenses', value:1800, badge:'Featured', match:78, owner:'Chris P.', avatar:'CP', avatarColor:'#2563eb', image:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&q=80' },
-    { id:'f4', category:'Home',        condition:'Good',     title:'Dyson V11 Vacuum',        wants:'Air Purifier',      value:320,  badge:'Featured', match:65, owner:'Sara J.',  avatar:'SJ', avatarColor:'#f59e0b', image:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80' },
-    { id:'f5', category:'Fashion',     condition:'Like New', title:'Supreme Box Logo Hoodie', wants:'Sneakers / Caps',   value:380,  badge:'Featured', match:74, owner:'Elena R.', avatar:'ER', avatarColor:'#14b8a6', image:'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=600&q=80' },
-    { id:'f6', category:'Outdoor',     condition:'Good',     title:'Trek Mountain Bike 29"',  wants:'Surfboard / Kayak', value:700,  badge:'Featured', match:71, owner:'Alex R.',  avatar:'AR', avatarColor:'#22c55e', image:'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80' },
-  ]
-})())
+// ── section data pools — all sliced from real listings ────────────────────────
+const featuredItems = ref(parseDataset('featured'))
 
-const popularCityItems = ref((() => {
-  const real = parseDataset('popularCity')
-  return real.length ? real : [
-    { id:'pc1', category:'Electronics', condition:'Like New', title:'Vintage Mech Keyboard',   wants:'DSLR Camera or Mic',    value:180, match:77, badge:null, owner:'Marcus Chen',  avatar:'MC', avatarColor:'#ED730C', image:'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=600&q=80' },
-    { id:'pc2', category:'Fashion',     condition:'Good',     title:'Leather Camera Bag',       wants:'Hard-shell Suitcase',   value:120, match:58, badge:null, owner:'Elena Rossi',  avatar:'ER', avatarColor:'#ec4899', image:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80' },
-    { id:'pc3', category:'Electronics', condition:'Like New', title:'Sony WH-1000XM4',          wants:'Graphic Tablet / iPad', value:250, match:91, badge:null, owner:'Liam Smith',   avatar:'LS', avatarColor:'#8b5cf6', image:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80' },
-    { id:'pc4', category:'Home',        condition:'Mint',     title:'Artisan Ceramic Set',      wants:'Outdoor Planter / Rug', value:90,  match:63, badge:null, owner:'Sara Jenkins', avatar:'SJ', avatarColor:'#f59e0b', image:'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80' },
-    { id:'pc5', category:'Collectibles',condition:'Good',     title:'Vinyl Records (50+)',       wants:'Cassette Player',       value:200, match:80, badge:null, owner:'Leo B.',       avatar:'LB', avatarColor:'#14b8a6', image:'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=600&q=80' },
-    { id:'pc6', category:'Outdoor',     condition:'Good',     title:'Camping Gear Bundle',      wants:'Fishing Equipment',     value:310, match:72, badge:null, owner:'Jake M.',      avatar:'JM', avatarColor:'#22c55e', image:'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600&q=80' },
-  ]
-})())
+function milesBetween(lat1, lng1, lat2, lng2) {
+  const toRad = d => (d * Math.PI) / 180
+  const R = 3958.8 // miles
+  const a = Math.sin(toRad(lat2 - lat1) / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(toRad(lng2 - lng1) / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(a))
+}
 
-// ── nearby city fallback mock data ────────────────────────────────────────────
-const nearbyCityItemsFallback = [
-  { id:'nc1', category:'Electronics', condition:'Good',     title:'Dell UltraSharp 27" 4K',  wants:'Gaming Monitor',       value:350, match:84, badge:null, owner:'Chris P.', avatar:'CP', avatarColor:'#2563eb', image:'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&q=80' },
-  { id:'nc2', category:'Books',       condition:'Like New', title:'Design Thinking Library', wants:'Programming Books',     value:80,  match:55, badge:null, owner:'Ana L.',   avatar:'AL', avatarColor:'#a78bfa', image:'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600&q=80' },
-  { id:'nc3', category:'Home',        condition:'Mint',     title:'Standing Desk Frame',     wants:'Office Chair',         value:280, match:90, badge:null, owner:'Tom W.',   avatar:'TW', avatarColor:'#0ea5e9', image:'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=600&q=80' },
-  { id:'nc4', category:'Gaming',      condition:'Good',     title:'Razer Blade 15 Gaming',   wants:'MacBook Pro',          value:1300,match:76, badge:null, owner:'Kai D.',   avatar:'KD', avatarColor:'#10b981', image:'https://images.unsplash.com/photo-1593642634524-b40b5baae6bb?w=600&q=80' },
-  { id:'nc5', category:'Fashion',     condition:'Like New', title:'Uniqlo Cashmere Crew',    wants:'Linen Shirts',         value:65,  match:68, badge:null, owner:'Mia S.',   avatar:'MS', avatarColor:'#f43f5e', image:'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=600&q=80' },
-  { id:'nc6', category:'Photography', condition:'Good',     title:'Godox LED Panel',         wants:'Ring Light / Softbox', value:120, match:83, badge:null, owner:'Ben H.',   avatar:'BH', avatarColor:'#f97316', image:'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&q=80' },
-]
+function inCity(item, city) {
+  return city && (item.location || '').toLowerCase().includes(city.toLowerCase())
+}
 
-const nearAreaItems = ref((() => {
-  const real = parseDataset('nearArea')
-  return real.length ? real : [
-    { id:'na1', category:'Electronics', condition:'Good',     title:'Dell UltraSharp 27" 4K',  wants:'Gaming Monitor',       value:350, match:84, badge:null, owner:'Chris P.', avatar:'CP', avatarColor:'#2563eb', image:'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&q=80' },
-    { id:'na2', category:'Books',       condition:'Like New', title:'Design Thinking Library', wants:'Programming Books',     value:80,  match:55, badge:null, owner:'Ana L.',   avatar:'AL', avatarColor:'#a78bfa', image:'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600&q=80' },
-    { id:'na3', category:'Home',        condition:'Mint',     title:'Standing Desk Frame',     wants:'Office Chair',         value:280, match:90, badge:null, owner:'Tom W.',   avatar:'TW', avatarColor:'#0ea5e9', image:'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=600&q=80' },
-    { id:'na4', category:'Gaming',      condition:'Good',     title:'Razer Blade 15 Gaming',   wants:'MacBook Pro',          value:1300,match:76, badge:null, owner:'Kai D.',   avatar:'KD', avatarColor:'#10b981', image:'https://images.unsplash.com/photo-1593642634524-b40b5baae6bb?w=600&q=80' },
-    { id:'na5', category:'Fashion',     condition:'Like New', title:'Uniqlo Cashmere Crew',    wants:'Linen Shirts',         value:65,  match:68, badge:null, owner:'Mia S.',   avatar:'MS', avatarColor:'#f43f5e', image:'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=600&q=80' },
-    { id:'na6', category:'Photography', condition:'Good',     title:'Godox LED Panel',         wants:'Ring Light / Softbox', value:120, match:83, badge:null, owner:'Ben H.',   avatar:'BH', avatarColor:'#f97316', image:'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&q=80' },
-  ]
-})())
+// Popular in [city]: best match scores in the user's city; falls back to
+// the whole pool until geolocation resolves a city name.
+const popularCityItems = computed(() => {
+  const local = allItems.value.filter(i => inCity(i, cityName.value))
+  const pool  = local.length >= 3 ? local : allItems.value
+  return [...pool].sort((a, b) => (b.match || 0) - (a.match || 0)).slice(0, 8)
+})
+
+// Available in [nearby city]: only real listings located there.
+const nearbyCityItems = computed(() =>
+  allItems.value.filter(i => inCity(i, nearbyCity.value)).slice(0, 8)
+)
+
+// Swaps near [area]: closest first once the user's position is known.
+const nearAreaItems = computed(() => {
+  if (userLat.value == null) return allItems.value.slice(0, 8)
+  return allItems.value
+    .filter(i => i.latitude && i.longitude)
+    .map(i => ({ ...i, distance: milesBetween(userLat.value, userLng.value, i.latitude, i.longitude).toFixed(1) }))
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 8)
+})
 
 // ── main all-items grid ────────────────────────────────────────────────────────
-const mainGrid = ref(allItems.value.length ? allItems.value : [
-  { id:'g1', category:'Electronics', condition:'Like New', title:'iPhone 14 Pro Max 256GB', desc:'Excellent condition, unlocked, all accessories included.',     value:900,  match:92, wants:'Gaming Laptop',    badge:null, owner:'Marcus C.', avatar:'MC', avatarColor:'#ED730C', image:'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&q=80' },
-  { id:'g2', category:'Gaming',      condition:'Good',     title:'ASUS ROG Gaming Laptop',  desc:'RTX 3070, 16GB RAM, 1TB SSD. Perfect for gaming & design.',    value:1200, match:85, wants:'iPhone, MacBook',  badge:null, owner:'Juno K.',  avatar:'JK', avatarColor:'#8b5cf6', image:'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600&q=80' },
-  { id:'g3', category:'Fashion',     condition:'Mint',     title:'Supreme Box Logo Hoodie', desc:'Size L, worn twice. No stains or defects. Rare colourway.',    value:380,  match:70, wants:'Sneakers / Caps',  badge:null, owner:'Elena R.', avatar:'ER', avatarColor:'#14b8a6', image:'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=600&q=80' },
-  { id:'g4', category:'Photography', condition:'Like New', title:'Sony A7 III Full Frame',  desc:'Only 3k shutter count. Kit lens and extra battery included.',   value:1800, match:78, wants:'Canon R5, Lenses',  badge:null, owner:'Chris P.', avatar:'CP', avatarColor:'#2563eb', image:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&q=80' },
-  { id:'g5', category:'Home',        condition:'Good',     title:'Dyson V11 Vacuum',        desc:'Powerful cordless. All attachments included. Works perfectly.', value:320,  match:65, wants:'Air Purifier',     badge:null, owner:'Sara J.',  avatar:'SJ', avatarColor:'#f59e0b', image:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80' },
-  { id:'g6', category:'Collectibles',condition:'Mint',     title:'Vinyl Records (50+)',      desc:'Mixed genres. 60s-90s. Rare finds and classic albums.',         value:200,  match:55, wants:'Cassette Player',  badge:null, owner:'Leo B.',  avatar:'LB', avatarColor:'#ec4899', image:'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=600&q=80' },
-  { id:'g7', category:'Outdoor',     condition:'Good',     title:'Trek Mountain Bike 29"',  desc:'Carbon frame, Shimano gears, bought this year.',                value:700,  match:88, wants:'Surfboard / Kayak', badge:null, owner:'Alex R.',  avatar:'AR', avatarColor:'#22c55e', image:'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80' },
-  { id:'g8', category:'Electronics', condition:'Like New', title:'iPad Pro 12.9" M2',       desc:'Barely used, with Apple Pencil and Magic Keyboard case.',       value:950,  match:96, wants:'MacBook Air M2',   badge:null, owner:'James K.', avatar:'JK', avatarColor:'#6366f1', image:'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=600&q=80' },
-])
+const total    = Number(el?.dataset.total || 0)
+const mainGrid = computed(() => allItems.value)
 
 // ── computed ───────────────────────────────────────────────────────────────────
 const filtered = computed(() => {
@@ -170,12 +140,6 @@ function toggleWish(id) {
 }
 
 function doSearch() { search.value = searchInput.value }
-
-async function loadMore() {
-  skeletonLoading.value = true
-  await new Promise(r => setTimeout(r, 900))
-  skeletonLoading.value = false
-}
 </script>
 
 <template>
@@ -271,14 +235,14 @@ async function loadMore() {
   <!-- ───────────────────────────────────────────
        1. TOP FEATURED SWAPS
   ─────────────────────────────────────────── -->
-  <section class="scroll-section">
+  <section v-if="featuredItems.length" class="scroll-section">
     <div class="section-inner">
       <div class="section-header">
         <div>
           <h2 class="section-title">Top Featured Swaps</h2>
           <p class="section-sub">Promoted listings from our community</p>
         </div>
-        <a href="#" class="see-all">See all →</a>
+        <a href="/items/section/featured" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
         <div v-for="item in featuredItems" :key="item.id" class="swapy-card hscroll-card">
@@ -290,7 +254,7 @@ async function loadMore() {
                   <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;margin-right:3px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                   Featured
                 </span>
-                <span v-if="item.match" class="match-pill">{{ item.match }}% Match</span>
+                <span v-if="item.match != null" class="match-pill">{{ item.match }}% Match</span>
               </div>
               <button @click.stop="toggleWish(item.id)" class="wish-btn">
                 <svg :class="['wish-icon', {wishlisted: wishlisted.has(item.id)}]" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
@@ -313,21 +277,21 @@ async function loadMore() {
   <!-- ───────────────────────────────────────────
        2. POPULAR IN [CITY]
   ─────────────────────────────────────────── -->
-  <section class="scroll-section">
+  <section v-if="popularCityItems.length" class="scroll-section">
     <div class="section-inner">
       <div class="section-header">
         <div>
           <h2 class="section-title">Popular in {{ cityName || 'Your City' }}</h2>
           <p class="section-sub">Most viewed &amp; matched swaps in your city</p>
         </div>
-        <a href="#" class="see-all">See all →</a>
+        <a href="/items/section/popular" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
         <div v-for="item in popularCityItems" :key="item.id" class="swapy-card hscroll-card">
           <a :href="'/item/'+item.id" class="card-link">
             <div class="card-img-wrap">
               <img :src="item.image" :alt="item.title" class="card-img">
-              <span v-if="item.match" class="match-pill match-pill--solo">{{ item.match }}% Match</span>
+              <span v-if="item.match != null" class="match-pill match-pill--solo">{{ item.match }}% Match</span>
               <button @click.stop="toggleWish(item.id)" class="wish-btn">
                 <svg :class="['wish-icon', {wishlisted: wishlisted.has(item.id)}]" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
               </button>
@@ -358,14 +322,14 @@ async function loadMore() {
           <h2 class="section-title">Available in {{ nearbyCity }}</h2>
           <p class="section-sub">Active swaps from a nearby city</p>
         </div>
-        <a href="#" class="see-all">See all →</a>
+        <a href="/items/section/nearby" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
         <div v-for="item in nearbyCityItems" :key="item.id" class="swapy-card hscroll-card">
           <a :href="'/item/'+item.id" class="card-link">
             <div class="card-img-wrap">
               <img :src="item.image" :alt="item.title" class="card-img">
-              <span v-if="item.match" class="match-pill match-pill--solo">{{ item.match }}% Match</span>
+              <span v-if="item.match != null" class="match-pill match-pill--solo">{{ item.match }}% Match</span>
               <button @click.stop="toggleWish(item.id)" class="wish-btn">
                 <svg :class="['wish-icon', {wishlisted: wishlisted.has(item.id)}]" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
               </button>
@@ -387,21 +351,21 @@ async function loadMore() {
   <!-- ───────────────────────────────────────────
        4. SWAPS NEAR [AREA]
   ─────────────────────────────────────────── -->
-  <section class="scroll-section">
+  <section v-if="nearAreaItems.length" class="scroll-section">
     <div class="section-inner">
       <div class="section-header">
         <div>
           <h2 class="section-title">Swaps near {{ areaName || 'Your Area' }}</h2>
           <p class="section-sub">Items closest to your location</p>
         </div>
-        <a href="#" class="see-all">See all →</a>
+        <a href="/items/section/near-you" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
         <div v-for="item in nearAreaItems" :key="item.id" class="swapy-card hscroll-card">
           <a :href="'/item/'+item.id" class="card-link">
             <div class="card-img-wrap">
               <img :src="item.image" :alt="item.title" class="card-img">
-              <span v-if="item.match" class="match-pill match-pill--solo">{{ item.match }}% Match</span>
+              <span v-if="item.match != null" class="match-pill match-pill--solo">{{ item.match }}% Match</span>
               <button @click.stop="toggleWish(item.id)" class="wish-btn">
                 <svg :class="['wish-icon', {wishlisted: wishlisted.has(item.id)}]" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
               </button>
@@ -479,23 +443,12 @@ async function loadMore() {
 
     <div class="section-inner" style="padding-top:20px;padding-bottom:72px;">
 
-      <div v-if="skeletonLoading" class="main-grid">
-        <div v-for="n in 6" :key="n" class="skeleton-card">
-          <div class="skeleton card-img-wrap"></div>
-          <div style="padding:12px 14px 14px;">
-            <div class="skeleton" style="height:9px;width:35%;border-radius:4px;margin-bottom:10px;"></div>
-            <div class="skeleton" style="height:14px;width:80%;border-radius:4px;margin-bottom:8px;"></div>
-            <div class="skeleton" style="height:9px;width:55%;border-radius:4px;"></div>
-          </div>
-        </div>
-      </div>
-
-      <div v-else-if="viewMode==='grid'" class="main-grid">
+      <div v-if="viewMode==='grid'" class="main-grid">
         <div v-for="item in filtered" :key="item.id" class="swapy-card">
           <a :href="'/item/'+item.id" class="card-link">
             <div class="card-img-wrap">
               <img :src="item.image" :alt="item.title" class="card-img">
-              <span v-if="item.match" class="match-pill match-pill--solo">{{ item.match }}% Match</span>
+              <span v-if="item.match != null" class="match-pill match-pill--solo">{{ item.match }}% Match</span>
               <button @click.stop="toggleWish(item.id)" class="wish-btn">
                 <svg :class="['wish-icon', {wishlisted: wishlisted.has(item.id)}]" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
               </button>
@@ -516,7 +469,7 @@ async function loadMore() {
         <a v-for="item in filtered" :key="item.id" :href="'/item/'+item.id" class="swapy-card list-card">
           <div class="list-img">
             <img :src="item.image" :alt="item.title" class="card-img">
-            <span v-if="item.match" class="match-pill match-pill--solo">{{ item.match }}% Match</span>
+            <span v-if="item.match != null" class="match-pill match-pill--solo">{{ item.match }}% Match</span>
           </div>
           <div class="list-body">
             <div>
@@ -529,7 +482,7 @@ async function loadMore() {
         </a>
       </div>
 
-      <div v-if="filtered.length === 0 && !skeletonLoading" style="text-align:center;padding:80px 0;">
+      <div v-if="filtered.length === 0" style="text-align:center;padding:80px 0;">
         <div style="margin-bottom:16px;display:flex;justify-content:center;">
           <svg width="52" height="52" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
         </div>
@@ -539,11 +492,7 @@ async function loadMore() {
       </div>
 
       <div v-if="filtered.length > 0" style="text-align:center;margin-top:48px;">
-        <button @click="loadMore" :disabled="skeletonLoading" class="load-more-btn">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M19 9l-7 7-7-7"/></svg>
-          Load More
-        </button>
-        <p style="margin-top:12px;font-size:0.78rem;color:#9ca3af;">Showing {{ filtered.length }} of 2,492 swaps</p>
+        <p style="margin-top:12px;font-size:0.78rem;color:#9ca3af;">Showing {{ filtered.length }} of {{ total }} swaps</p>
       </div>
     </div>
   </section>

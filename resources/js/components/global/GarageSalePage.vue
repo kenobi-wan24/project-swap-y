@@ -15,7 +15,10 @@ function onScroll() {
   if (heroSearchEl.value) {
     threshold = heroSearchEl.value.offsetTop + heroSearchEl.value.offsetHeight - 60
   }
-  slot.classList.toggle('open', scrollY.value > threshold)
+  // Hysteresis: open past the hero, close only well before it — no flicker
+  const isOpen = slot.classList.contains('open')
+  if (!isOpen && scrollY.value > threshold + 40) slot.classList.add('open')
+  else if (isOpen && scrollY.value < threshold - 40) slot.classList.remove('open')
 }
 onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))

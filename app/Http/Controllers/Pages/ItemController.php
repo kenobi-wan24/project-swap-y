@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Pages;
 use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\ItemImage;
+use App\Support\Categories;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class ItemController extends Controller
 {
@@ -23,7 +25,7 @@ class ItemController extends Controller
 
         $images = $item->images
             ->sortByDesc('is_primary')
-            ->map(fn ($img) => asset('storage/' . $img->path))
+            ->map(fn ($img) => media_url($img->path))
             ->values()
             ->all();
 
@@ -69,7 +71,7 @@ class ItemController extends Controller
             'title'            => ['required', 'string', 'max:255'],
             'description'      => ['nullable', 'string'],
             'estimated_value'  => ['nullable', 'integer', 'min:0'],
-            'category'         => ['required', 'string'],
+            'category'         => ['required', 'string', Rule::in(Categories::ITEMS_WITH_OTHER)],
             'condition'        => ['required', 'in:new,like_new,good,fair'],
             'location'         => ['nullable', 'string', 'max:255'],
             'looking_for'      => ['nullable', 'string', 'max:255'],

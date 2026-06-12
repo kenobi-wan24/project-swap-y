@@ -23,7 +23,7 @@ class HomesController extends Controller
                 // primary image first, then the rest
                 $images = $home->images
                     ->sortByDesc('is_primary')
-                    ->map(fn ($img) => asset('storage/' . $img->path))
+                    ->map(fn ($img) => media_url($img->path))
                     ->values()
                     ->all();
 

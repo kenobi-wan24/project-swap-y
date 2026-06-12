@@ -3,7 +3,7 @@
 
 @section('content')
 <div
-    id="browse-app"
+    id="items-app"
     data-listings='@json($listings)'
     data-featured='@json($featured)'
     data-total='{{ $total }}'

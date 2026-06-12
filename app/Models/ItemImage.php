@@ -19,6 +19,6 @@ class ItemImage extends Model
 
     public function url(): string
     {
-        return asset('storage/' . $this->path);
+        return media_url($this->path);
     }
 }

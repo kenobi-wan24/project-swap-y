@@ -125,17 +125,18 @@ const priceNote = computed(() => {
   </div>
 
   <!-- BREADCRUMB -->
-  <div style="background:#fff;border-bottom:1px solid #EDE8E0;padding:12px 40px;">
+  <div class="hd-crumb">
     <div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:600;color:#9ca3af;">
-      <a href="/homes" style="color:#9ca3af;text-decoration:none;" onmouseover="this.style.color='#ED730C'" onmouseout="this.style.color='#9ca3af'">Homes</a>
+      <a href="/homes" style="color:#9ca3af;text-decoration:none;display:inline-flex;align-items:center;gap:4px;" onmouseover="this.style.color='#ED730C'" onmouseout="this.style.color='#9ca3af'">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        Homes
+      </a>
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-      <span>{{ home.location && home.location.split(',')[1] ? home.location.split(',')[1].trim() : 'Metro Manila' }}</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-      <span style="color:#1A1A1A;">{{ home.title }}</span>
+      <span style="color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ home.title }}</span>
     </div>
   </div>
 
-  <div style="max-width:1280px;margin:0 auto;padding:32px 40px 80px;">
+  <div class="hd-main">
 
     <!-- TITLE ROW -->
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
@@ -170,27 +171,59 @@ const priceNote = computed(() => {
       </div>
     </div>
 
-    <!-- PHOTO GRID -->
-    <div style="border-radius:20px;overflow:hidden;margin-bottom:40px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:280px 280px;gap:4px;">
-      <div style="grid-row:1/3;overflow:hidden;cursor:pointer;position:relative;" @click="openGallery(0)">
-        <img v-if="home.images[0]" :src="home.images[0]" :alt="home.title" style="width:100%;height:100%;object-fit:cover;transition:transform .4s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+    <!-- PHOTO GALLERY — layout adapts to how many photos the listing has -->
+    <div class="gal-wrap">
+
+      <!-- one photo: single wide hero, no empty space -->
+      <div v-if="home.images.length === 1" class="gal-cell gal-single" @click="openGallery(0)">
+        <img :src="home.images[0]" :alt="home.title" class="gal-img">
       </div>
-      <div v-for="(img, i) in home.images.slice(1,5)" :key="i" style="overflow:hidden;cursor:pointer;position:relative;" @click="openGallery(i+1)">
-        <img :src="img" style="width:100%;height:100%;object-fit:cover;transition:transform .4s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-        <div v-if="i===3" style="position:absolute;inset:0;background:rgba(0,0,0,0.44);display:flex;align-items:center;justify-content:center;">
-          <span style="color:#fff;font-size:0.85rem;font-weight:800;">Show all {{ home.images.length }} photos</span>
+
+      <!-- two photos: even split -->
+      <div v-else-if="home.images.length === 2" class="gal-two">
+        <div v-for="(img, i) in home.images" :key="i" class="gal-cell" @click="openGallery(i)">
+          <img :src="img" :alt="home.title" class="gal-img">
         </div>
       </div>
+
+      <!-- three or four: hero + stacked side -->
+      <div v-else-if="home.images.length <= 4" class="gal-hero-side">
+        <div class="gal-cell" @click="openGallery(0)">
+          <img :src="home.images[0]" :alt="home.title" class="gal-img">
+        </div>
+        <div class="gal-side" :style="{ gridTemplateRows: `repeat(${home.images.length - 1}, 1fr)` }">
+          <div v-for="(img, i) in home.images.slice(1)" :key="i" class="gal-cell" @click="openGallery(i + 1)">
+            <img :src="img" :alt="home.title" class="gal-img">
+          </div>
+        </div>
+      </div>
+
+      <!-- five or more: hero + 2×2 -->
+      <div v-else class="gal-five">
+        <div class="gal-cell gal-big" @click="openGallery(0)">
+          <img :src="home.images[0]" :alt="home.title" class="gal-img">
+        </div>
+        <div v-for="(img, i) in home.images.slice(1, 5)" :key="i" class="gal-cell" @click="openGallery(i + 1)">
+          <img :src="img" :alt="home.title" class="gal-img">
+          <div v-if="i === 3 && home.images.length > 5" class="gal-more">+{{ home.images.length - 5 }} more</div>
+        </div>
+      </div>
+
+      <!-- show-all pill -->
+      <button v-if="home.images.length > 1" class="gal-all-btn" @click="openGallery(0)">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Show all {{ home.images.length }} photos
+      </button>
     </div>
 
     <!-- TWO-COLUMN LAYOUT -->
-    <div style="display:grid;grid-template-columns:1fr 380px;gap:48px;align-items:start;">
+    <div class="hd-columns">
 
       <!-- LEFT COLUMN -->
       <div>
 
         <!-- Quick stats -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);border:1.5px solid #EDE8E0;border-radius:16px;overflow:hidden;margin-bottom:32px;background:#fff;">
+        <div class="hd-stats">
           <div style="padding:18px 14px;text-align:center;border-right:1.5px solid #EDE8E0;">
             <svg width="20" height="20" fill="none" stroke="#ED730C" stroke-width="1.8" viewBox="0 0 24 24" style="display:block;margin:0 auto 6px;"><path d="M3 7v13h18V7"/><path d="M1 10h22"/><path d="M7 10V4h10v6"/></svg>
             <p style="font-size:0.8rem;font-weight:800;color:#1A1A1A;margin:0;">{{ home.beds }}</p>
@@ -244,7 +277,7 @@ const priceNote = computed(() => {
         </div>
 
         <!-- Amenities -->
-        <div style="padding-bottom:28px;border-bottom:1px solid #F3F0EC;margin-bottom:28px;">
+        <div v-if="home.amenities && home.amenities.length" style="padding-bottom:28px;border-bottom:1px solid #F3F0EC;margin-bottom:28px;">
           <h2 style="font-size:1.1rem;font-weight:900;color:#1A1A1A;margin:0 0 16px;letter-spacing:-.02em;">What this place offers</h2>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <div v-for="a in home.amenities" :key="a.label" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fff;border-radius:12px;border:1.5px solid #EDE8E0;">
@@ -262,7 +295,7 @@ const priceNote = computed(() => {
         </div>
 
         <!-- Tags -->
-        <div style="padding-bottom:28px;border-bottom:1px solid #F3F0EC;margin-bottom:28px;">
+        <div v-if="home.tags && home.tags.length" style="padding-bottom:28px;border-bottom:1px solid #F3F0EC;margin-bottom:28px;">
           <h2 style="font-size:1.1rem;font-weight:900;color:#1A1A1A;margin:0 0 14px;letter-spacing:-.02em;">Tags</h2>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             <span v-for="tag in home.tags" :key="tag" style="font-size:0.8rem;font-weight:700;color:#4b5563;background:#F3F0EC;padding:6px 14px;border-radius:999px;border:1px solid #EDE8E0;">{{ tag }}</span>
@@ -293,7 +326,7 @@ const priceNote = computed(() => {
       </div>
 
       <!-- RIGHT COLUMN — STICKY CARD -->
-      <div style="position:sticky;top:20px;">
+      <div class="hd-sticky">
         <div style="background:#fff;border-radius:20px;border:1.5px solid #EDE8E0;box-shadow:0 8px 40px rgba(0,0,0,0.1);overflow:hidden;">
 
           <!-- Price -->
@@ -397,3 +430,62 @@ const priceNote = computed(() => {
   </div>
 </div>
 </template>
+
+<style scoped>
+/* ── Page frame ── */
+.hd-crumb { background: #fff; border-bottom: 1px solid #EDE8E0; padding: 12px 40px; }
+.hd-main  { max-width: 1280px; margin: 0 auto; padding: 32px 40px 80px; }
+
+/* ── Photo gallery ── */
+.gal-wrap { position: relative; border-radius: 20px; overflow: hidden; margin-bottom: 40px; }
+.gal-img  { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s ease; }
+.gal-cell { position: relative; overflow: hidden; cursor: pointer; background: #f3f4f6; }
+.gal-cell:hover .gal-img { transform: scale(1.04); }
+
+.gal-single    { height: 420px; }
+.gal-two       { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; height: 420px; }
+.gal-hero-side { display: grid; grid-template-columns: 2fr 1fr; gap: 4px; height: 420px; }
+.gal-side      { display: grid; gap: 4px; min-height: 0; }
+.gal-five      { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; height: 420px; }
+.gal-big       { grid-row: 1 / 3; }
+.gal-more {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.45);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; font-weight: 800;
+}
+.gal-all-btn {
+  position: absolute; bottom: 16px; right: 16px;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: #fff; border: 1px solid #1A1A1A; border-radius: 10px;
+  padding: 9px 14px; font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem; font-weight: 800; color: #1A1A1A;
+  cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+.gal-all-btn:hover { background: #f7f7f7; }
+
+/* ── Content columns ── */
+.hd-columns { display: grid; grid-template-columns: 1fr 380px; gap: 48px; align-items: start; }
+.hd-sticky  { position: sticky; top: 96px; }
+.hd-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border: 1.5px solid #EDE8E0; border-radius: 16px;
+  overflow: hidden; margin-bottom: 32px; background: #fff;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .hd-columns { grid-template-columns: 1fr; gap: 32px; }
+  .hd-sticky  { position: static; }
+}
+@media (max-width: 768px) {
+  .hd-crumb { padding: 10px 16px; }
+  .hd-main  { padding: 20px 16px 64px; }
+  .gal-wrap { border-radius: 14px; }
+  .gal-single, .gal-two, .gal-hero-side, .gal-five { height: 280px; }
+  .gal-five { grid-template-columns: 2fr 1fr; }
+  .gal-five .gal-cell:nth-child(n+4) { display: none; } /* hero + 2 on phones */
+  .hd-stats { grid-template-columns: repeat(2, 1fr); }
+  .hd-stats > div:nth-child(2n) { border-right: none !important; }
+  .hd-stats > div:nth-child(-n+2) { border-bottom: 1.5px solid #EDE8E0; }
+}
+</style>

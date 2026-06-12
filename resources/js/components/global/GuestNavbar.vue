@@ -9,7 +9,7 @@ const props = defineProps({
 const mobileOpen = ref(false)
 
 const links = [
-    { label: 'Items',       route: 'browse',      href: '/browse' },
+    { label: 'Items',       route: 'items',       href: '/items' },
     { label: 'Homes',       route: 'homes',       href: '/homes' },
     { label: 'Garage Sale', route: 'garage-sale', href: '/garage-sale' },
     { label: 'Services',    route: 'services',    href: '/services' },

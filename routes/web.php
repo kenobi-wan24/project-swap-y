@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Pages\HomeController;
-use App\Http\Controllers\Pages\BrowseController;
+use App\Http\Controllers\Pages\ItemsController;
 use App\Http\Controllers\Pages\GarageSaleController;
 use App\Http\Controllers\Pages\GarageSaleDetailController;
 use App\Http\Controllers\Pages\HomesController;
@@ -27,8 +27,10 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 // Public routes
-Route::get('/', fn() => redirect()->route('browse'))->name('home');
-Route::get('/browse',        [BrowseController::class,     'index'])->name('browse');
+Route::get('/', fn() => redirect()->route('items'))->name('home');
+Route::get('/browse', fn() => redirect()->route('items')); // legacy URL
+Route::get('/items',         [ItemsController::class,      'index'])->name('items');
+Route::get('/items/section/{key}', [ItemsController::class, 'section'])->name('items.section');
 Route::get('/homes',         [HomesController::class,      'index'])->name('homes');
 Route::get('/homes/create',  [HomesController::class,      'create'])->name('homes.create')->middleware('auth');
 Route::get('/homes/{id}',    [HomeDetailController::class, 'show'])->name('homes.show');

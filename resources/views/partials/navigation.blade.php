@@ -356,10 +356,10 @@
             height: 60px;
             padding: 0 1.25rem;
         }
-        /* hide the static pill — Vue sticky search takes over on scroll */
-        .mobile-search-pill { display: none; }
-        /* allow sticky search to show on mobile */
-        #nav-sticky-search { display: block !important; }
+        /* always-visible compact search pill on mobile (no expanding row) */
+        .mobile-search-pill { display: flex; flex: 1; min-width: 0; }
+        /* the nav⇄search swap is desktop-only */
+        .header-center { display: none; }
     }
 
     @media (min-width: 768px) {
@@ -367,36 +367,71 @@
         .mobile-hamburger { display: none !important; }
     }
 
-    /* ── STICKY SEARCH SLOT ── */
-    #nav-sticky-search {
-        overflow: hidden;
-        max-height: 0;
+    /* ── HEADER CENTER: nav links ⇄ compact search swap ──
+       The header keeps one constant height; past the hero, the page's
+       search bar fades in OVER the center nav instead of adding a row,
+       so scrolling down never loses content space. */
+    .header-center {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .header-center > .desktop-nav {
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .header-center:has(> #nav-sticky-search.open) > .desktop-nav {
         opacity: 0;
-        transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease, padding 0.4s cubic-bezier(0.4,0,0.2,1);
-        padding: 0 2.5rem;
-        background: #fff;
-        /* ensure inputs inside are always interactive */
+        transform: translateY(-8px);
         pointer-events: none;
     }
+
+    /* ── STICKY SEARCH SLOT — compact pill in place of the center nav ── */
+    #nav-sticky-search {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: clamp(340px, 34vw, 520px);
+        transform: translate(-50%, -50%) translateY(10px) scale(0.97);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.25s;
+        z-index: 2;
+    }
+    /* The teleported pill was designed for its own full-width row —
+       compact it (padding, button, shadow) so it sits inside the 80px
+       header like a proper nav pill. Inline styles need !important. */
+    #nav-sticky-search .sticky-search-desktop {
+        padding: 4px 4px 4px 16px !important;
+        /* match the navbar's bottom border */
+        border: 2px solid #EBEBEB !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.10) !important;
+    }
+    #nav-sticky-search .sticky-search-desktop input {
+        font-size: 0.82rem !important;
+    }
+    #nav-sticky-search .sticky-search-desktop button {
+        padding: 8px 18px !important;
+        font-size: 0.8rem !important;
+        box-shadow: none !important;
+    }
     #nav-sticky-search.open {
-        max-height: 100px;
         opacity: 1;
-        padding: 12px 2.5rem 16px;
-        border-bottom: 2px solid #EBEBEB;
+        visibility: visible;
         pointer-events: auto;
+        transform: translate(-50%, -50%) translateY(0) scale(1);
+        transition: opacity 0.25s ease, transform 0.25s ease;
     }
-    /* Suppress the header's own bottom border when search row is visible */
-    #main-header.scrolled { border-bottom-color: transparent; }
-    @media (max-width: 767px) {
-        #nav-sticky-search.open { padding: 10px 1.25rem 12px; }
-    }
+    /* Soft elevation once the page is scrolled */
+    #main-header.scrolled { box-shadow: 0 2px 14px rgba(0,0,0,0.06); }
 </style>
 
 <header id="main-header">
     <div class="header-row">
 
         {{-- LOGO --}}
-        <a href="{{ auth()->check() ? route('browse') : route('home') }}"
+        <a href="{{ auth()->check() ? route('items') : route('home') }}"
            style="text-decoration:none;flex-shrink:0;display:flex;align-items:center;">
             <img src="{{ asset('images/logo-swapy.png') }}" alt="SWAPY"
                  style="height:48px;object-fit:contain;display:block;">
@@ -404,12 +439,14 @@
 
         @php $currentRoute = Route::currentRouteName(); @endphp
 
-        {{-- CENTER NAV (desktop only) --}}
+        {{-- CENTER: nav links ⇄ compact sticky search (swap, constant height) --}}
+        <div class="header-center">
+
         <nav class="desktop-nav hidden md:flex items-center" style="gap:2px;">
 
             {{-- ITEMS --}}
-            <a href="{{ route('browse') }}"
-               class="nav-link {{ $currentRoute === 'browse' ? 'active' : '' }}">
+            <a href="{{ route('items') }}"
+               class="nav-link {{ str_starts_with($currentRoute ?? '', 'items') ? 'active' : '' }}">
                 <span class="nav-icon-wrap">
                     <img class="icon-inactive" src="{{ asset('images/icons/items-inactive.png') }}" alt="">
                     <img class="icon-active"   src="{{ asset('images/icons/items-active.png') }}"   alt="">
@@ -448,6 +485,11 @@
             </a>
 
         </nav>
+
+        {{-- STICKY SEARCH SLOT — Vue teleports the page's search bar here on scroll --}}
+        <div id="nav-sticky-search"></div>
+
+        </div>
 
         {{-- RIGHT SIDE (desktop) --}}
         <div class="header-right desktop-nav hidden md:flex">
@@ -583,7 +625,7 @@
         </div>
 
         {{-- MOBILE: simplified search pill (flex: 1 fills the space between logo and avatar) --}}
-        <a href="{{ route('browse') }}" class="mobile-search-pill">
+        <a href="{{ route('items') }}" class="mobile-search-pill">
             <span class="mobile-search-pill-text">Search swaps...</span>
             <span class="mobile-search-pill-btn">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -613,11 +655,6 @@
         {{-- NOTE: #mobile-hamburger-dropdown is rendered AFTER </header> below --}}
         
 
-    </div>
-
-    {{-- STICKY SEARCH SLOT — Vue teleports the search bar here on scroll --}}
-    <div id="nav-sticky-search">
-        <div style="max-width:82rem;margin:0 auto;"></div>
     </div>
 
 </header>
@@ -720,7 +757,7 @@
 <nav id="mobile-bottom-nav" aria-label="Mobile navigation">
 
     {{-- Items --}}
-    <a href="{{ route('browse') }}" class="mob-tab {{ $currentRoute === 'browse' ? 'mob-tab--active' : '' }}">
+    <a href="{{ route('items') }}" class="mob-tab {{ str_starts_with($currentRoute ?? '', 'items') ? 'mob-tab--active' : '' }}">
         <span class="mob-tab-icon">
             <img class="icon-inactive" src="{{ asset('images/icons/items-inactive.png') }}" alt="">
             <img class="icon-active"   src="{{ asset('images/icons/items-active.png') }}"   alt="">

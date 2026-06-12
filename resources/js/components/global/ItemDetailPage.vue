@@ -53,13 +53,13 @@ function requireAuth() { if (isGuest.value) { showModal.value = true; return fal
   <!-- ══ BREADCRUMB ══ -->
   <div style="max-width:1200px;margin:0 auto;padding:20px 24px 0;">
     <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:#6b7280;">
-      <a href="/browse" style="color:#6b7280;text-decoration:none;display:inline-flex;align-items:center;gap:4px;"
+      <a href="/items" style="color:#6b7280;text-decoration:none;display:inline-flex;align-items:center;gap:4px;"
         onmouseover="this.style.color='#ED730C'" onmouseout="this.style.color='#6b7280'">
         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-        Back to Browse
+        Items
       </a>
-      <span v-if="item.category" style="color:#d1d5db;">/</span>
-      <span v-if="item.category" style="color:#3A3330;font-weight:600;">{{ item.category }}</span>
+      <span style="color:#d1d5db;">/</span>
+      <span style="color:#3A3330;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ item.title }}</span>
     </div>
   </div>
 

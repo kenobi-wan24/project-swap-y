@@ -101,7 +101,7 @@
                     {{-- Platform --}}
                     <div>
                         <div class="footer-col-title">Platform</div>
-                        <a href="{{ route('browse') }}"      class="footer-link">Browse Items</a>
+                        <a href="{{ route('items') }}"       class="footer-link">Browse Items</a>
                         <a href="{{ route('how-it-works') }}" class="footer-link">How It Works</a>
                         <a href="#pricing"                   class="footer-link">Pricing</a>
                         <a href="#"                          class="footer-link">Mobile App</a>

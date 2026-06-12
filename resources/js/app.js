@@ -5,7 +5,8 @@ import axios from 'axios'
 import GuestNavbar    from './components/global/GuestNavbar.vue'
 import AuthTabs       from './components/auth/Authtabs.vue'
 
-import BrowsePage     from './components/global/BrowsePage.vue'
+import ItemsPage        from './components/global/ItemsPage.vue'
+import ItemsSectionPage from './components/global/ItemsSectionPage.vue'
 import HomesPage      from './components/global/HomesPage.vue'
 import HomeDetailPage from './components/global/HomeDetailPage.vue'
 import HomeCreatePage from './components/global/HomeCreatePage.vue'
@@ -41,9 +42,14 @@ if (authEl) {
     }).mount('#auth-app')
 }
 
-// Browse
-if (document.getElementById('browse-app')) {
-    createApp(BrowsePage).mount('#browse-app')
+// Items
+if (document.getElementById('items-app')) {
+    createApp(ItemsPage).mount('#items-app')
+}
+
+// Items section ("See all" view)
+if (document.getElementById('items-section-app')) {
+    createApp(ItemsSectionPage).mount('#items-section-app')
 }
 
 // Homes
