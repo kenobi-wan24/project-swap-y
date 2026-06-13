@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { formatMoney, setCurrencyFromCountry } from '../../constants/currency'
 import { ITEM_CATEGORIES } from '../../constants/categories'
 
 // ref for the hero search bar element
@@ -51,6 +52,7 @@ onMounted(async () => {
     )
     const data = await r.json()
     const addr = data.address || {}
+    if (addr.country_code) setCurrencyFromCountry(addr.country_code)
     cityName.value = addr.city || addr.town || addr.municipality || ''
     areaName.value = addr.suburb || addr.neighbourhood || addr.quarter || addr.village || cityName.value
   } catch {
@@ -262,10 +264,10 @@ function doSearch() { search.value = searchInput.value }
             </div>
             <div class="card-body">
               <h3 class="card-title">{{ item.title }}</h3>
-              <p class="card-wants">Wants: <span class="wants-value">{{ item.wants }}</span></p>
+              <p class="card-wants">Wants: <span class="wants-value">{{ item.wants || 'Open to offers' }}</span></p>
               <div class="card-value-row">
                 <span class="card-value-label">Est. Value</span>
-                <p class="card-value">${{ item.value?.toLocaleString() }}</p>
+                <p class="card-value">{{ formatMoney(item.value) }}</p>
               </div>
             </div>
           </a>
@@ -298,10 +300,10 @@ function doSearch() { search.value = searchInput.value }
             </div>
             <div class="card-body">
               <h3 class="card-title">{{ item.title }}</h3>
-              <p class="card-wants">Wants: <span class="wants-value">{{ item.wants }}</span></p>
+              <p class="card-wants">Wants: <span class="wants-value">{{ item.wants || 'Open to offers' }}</span></p>
               <div class="card-value-row">
                 <span class="card-value-label">Est. Value</span>
-                <p class="card-value">${{ item.value?.toLocaleString() }}</p>
+                <p class="card-value">{{ formatMoney(item.value) }}</p>
               </div>
             </div>
           </a>
@@ -336,10 +338,10 @@ function doSearch() { search.value = searchInput.value }
             </div>
             <div class="card-body">
               <h3 class="card-title">{{ item.title }}</h3>
-              <p class="card-wants">Wants: <span class="wants-value">{{ item.wants }}</span></p>
+              <p class="card-wants">Wants: <span class="wants-value">{{ item.wants || 'Open to offers' }}</span></p>
               <div class="card-value-row">
                 <span class="card-value-label">Est. Value</span>
-                <p class="card-value">${{ item.value?.toLocaleString() }}</p>
+                <p class="card-value">{{ formatMoney(item.value) }}</p>
               </div>
             </div>
           </a>
@@ -372,10 +374,10 @@ function doSearch() { search.value = searchInput.value }
             </div>
             <div class="card-body">
               <h3 class="card-title">{{ item.title }}</h3>
-              <p class="card-wants">Wants: <span class="wants-value">{{ item.wants }}</span></p>
+              <p class="card-wants">Wants: <span class="wants-value">{{ item.wants || 'Open to offers' }}</span></p>
               <div class="card-value-row">
                 <span class="card-value-label">Est. Value</span>
-                <p class="card-value">${{ item.value?.toLocaleString() }}</p>
+                <p class="card-value">{{ formatMoney(item.value) }}</p>
               </div>
             </div>
           </a>
@@ -404,7 +406,7 @@ function doSearch() { search.value = searchInput.value }
             </div>
           </div>
           <div class="filter-btn" style="gap:8px;">
-            <span style="font-size:0.82rem;font-weight:600;color:#6b7280;white-space:nowrap;">Up to ${{ valueMax.toLocaleString() }}</span>
+            <span style="font-size:0.82rem;font-weight:600;color:#6b7280;white-space:nowrap;">Up to {{ formatMoney(valueMax) }}</span>
             <input type="range" v-model.number="valueMax" min="50" max="5000" step="50"
               style="width:80px;accent-color:#ED730C;cursor:pointer;">
           </div>
@@ -455,10 +457,10 @@ function doSearch() { search.value = searchInput.value }
             </div>
             <div class="card-body">
               <h3 class="card-title">{{ item.title }}</h3>
-              <p class="card-wants">Wants: <span class="wants-value">{{ item.wants }}</span></p>
+              <p class="card-wants">Wants: <span class="wants-value">{{ item.wants || 'Open to offers' }}</span></p>
               <div class="card-value-row">
                 <span class="card-value-label">Est. Value</span>
-                <p class="card-value">${{ item.value?.toLocaleString() }}</p>
+                <p class="card-value">{{ formatMoney(item.value) }}</p>
               </div>
             </div>
           </a>
@@ -475,9 +477,9 @@ function doSearch() { search.value = searchInput.value }
             <div>
               <p class="list-meta">{{ item.category }} · {{ item.condition }}</p>
               <h3 class="list-title">{{ item.title }}</h3>
-              <p class="card-wants" style="margin-top:2px;">Wants: <span class="wants-value">{{ item.wants }}</span></p>
+              <p class="card-wants" style="margin-top:2px;">Wants: <span class="wants-value">{{ item.wants || 'Open to offers' }}</span></p>
             </div>
-            <p class="list-value">${{ item.value?.toLocaleString() }}</p>
+            <p class="list-value">{{ formatMoney(item.value) }}</p>
           </div>
         </a>
       </div>
@@ -624,9 +626,11 @@ function doSearch() { search.value = searchInput.value }
 .pills-row {
   position: absolute;
   top: 10px; left: 10px;
+  right: 44px; /* keep clear of the wishlist heart */
   display: flex;
   gap: 5px;
   align-items: center;
+  flex-wrap: wrap;
 }
 .badge-pill {
   background: #ED730C;

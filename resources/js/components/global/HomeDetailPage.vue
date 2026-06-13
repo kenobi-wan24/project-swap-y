@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { currency, formatMoney } from '../../constants/currency'
 
 const el   = document.getElementById('home-detail-app')
 const raw  = JSON.parse(el?.dataset.home || '{}')
@@ -81,8 +82,8 @@ const cfg = computed(() => typeCfg[home.value.type] || typeCfg['Swap'])
 
 // ── price display ─────────────────────────────────────────────────────────────
 const priceLabel = computed(() => {
-  if (home.value.type === 'Sell') return 'P' + (home.value.value / 1000000).toFixed(2) + 'M'
-  return 'P' + Number(home.value.value).toLocaleString() + '/mo'
+  if (home.value.type === 'Sell') return currency.value.symbol + (home.value.value / 1000000).toFixed(2) + 'M'
+  return formatMoney(home.value.value) + '/mo'
 })
 const priceNote = computed(() => {
   if (home.value.type === 'Sell')      return 'Asking price'
@@ -420,7 +421,7 @@ const priceNote = computed(() => {
             </div>
             <p style="font-size:0.88rem;font-weight:800;color:#1A1A1A;margin:0 0 4px;line-height:1.3;">{{ s.title }}</p>
             <p style="font-size:0.85rem;font-weight:900;color:#ED730C;margin:0;">
-              {{ s.type === 'Sell' ? 'P' + (s.value/1000000).toFixed(1) + 'M' : 'P' + Number(s.value).toLocaleString() + '/mo' }}
+              {{ s.type === 'Sell' ? currency.symbol + (s.value/1000000).toFixed(1) + 'M' : formatMoney(s.value) + '/mo' }}
             </p>
           </div>
         </a>

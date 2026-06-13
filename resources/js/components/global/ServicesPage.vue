@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import ServiceCard from './ServiceCard.vue'
+import { setCurrencyFromCountry } from '../../constants/currency'
 
 const el       = document.getElementById('services-app')
 const services = ref(JSON.parse(el?.dataset.services || '[]'))
@@ -38,6 +39,7 @@ onMounted(async () => {
     )
     const data = await r.json()
     const addr = data.address || {}
+    if (addr.country_code) setCurrencyFromCountry(addr.country_code)
     cityName.value   = addr.city || addr.town || addr.municipality || ''
     areaName.value   = addr.suburb || addr.neighbourhood || addr.quarter || addr.village || cityName.value
     nearbyCity.value = 'General Santos'

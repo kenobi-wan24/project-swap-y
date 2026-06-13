@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import { currency } from '../../constants/currency'
 
 const props = defineProps({
   items:       { type: Array, default: () => [] },
@@ -23,10 +24,10 @@ const svcCats  = ['Design & Creative', 'Tech & Digital', 'Education & Tutoring',
 const homeTypes = ['Swap', 'Rent', 'Sell', 'Co-living']
 
 const groups = computed(() => [
-  { key: 'items',       routeType: 'item',        label: 'Items',        single: 'Item',        icon: 'box',    color: '#ED730C', createUrl: '/items/create',       data: lists.items,       catLabel: 'Category',     catOptions: itemCats,  priceLabel: 'Est. Value (₱)' },
-  { key: 'homes',       routeType: 'home',        label: 'Homes',        single: 'Home',        icon: 'home',   color: '#2563eb', createUrl: '/homes/create',       data: lists.homes,       catLabel: 'Listing Type', catOptions: homeTypes, priceLabel: 'Price / Rent (₱)' },
+  { key: 'items',       routeType: 'item',        label: 'Items',        single: 'Item',        icon: 'box',    color: '#ED730C', createUrl: '/items/create',       data: lists.items,       catLabel: 'Category',     catOptions: itemCats,  priceLabel: `Est. Value (${currency.value.symbol})` },
+  { key: 'homes',       routeType: 'home',        label: 'Homes',        single: 'Home',        icon: 'home',   color: '#2563eb', createUrl: '/homes/create',       data: lists.homes,       catLabel: 'Listing Type', catOptions: homeTypes, priceLabel: `Price / Rent (${currency.value.symbol})` },
   { key: 'garageSales', routeType: 'garage-sale', label: 'Garage Sales', single: 'Garage Sale', icon: 'store',  color: '#149189', createUrl: '/garage-sale/create', data: lists.garageSales, catLabel: null,           catOptions: null,      priceLabel: null },
-  { key: 'services',    routeType: 'service',     label: 'Services',     single: 'Service',     icon: 'wrench', color: '#8b5cf6', createUrl: '/services/create',    data: lists.services,    catLabel: 'Category',     catOptions: svcCats,   priceLabel: 'Rate (₱)' },
+  { key: 'services',    routeType: 'service',     label: 'Services',     single: 'Service',     icon: 'wrench', color: '#8b5cf6', createUrl: '/services/create',    data: lists.services,    catLabel: 'Category',     catOptions: svcCats,   priceLabel: `Rate (${currency.value.symbol})` },
 ])
 
 const total = computed(() => groups.value.reduce((n, g) => n + g.data.length, 0))
@@ -342,5 +343,13 @@ textarea.ml-input { resize: vertical; }
 
 @media (max-width: 768px) {
   .ml-grid { grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr)); gap: 12px; }
+}
+
+@media (max-width: 480px) {
+  .ml-modal-backdrop { padding: 14px; }
+  .ml-modal-row { grid-template-columns: 1fr; gap: 0; }
+  .ml-modal-foot { flex-direction: column-reverse; }
+  .ml-modal-foot .ml-btn-ghost,
+  .ml-modal-foot .ml-btn-primary { width: 100%; padding-top: 13px; padding-bottom: 13px; }
 }
 </style>

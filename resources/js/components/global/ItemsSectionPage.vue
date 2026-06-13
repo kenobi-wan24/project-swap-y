@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { formatMoney } from '../../constants/currency'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { ITEM_CATEGORIES } from '../../constants/categories'
@@ -266,7 +267,7 @@ watch(viewMode, async () => {
               <span v-if="activeFilterCount" class="filter-count">{{ activeFilterCount }}</span>
             </button>
             <div v-if="showFiltersPanel" class="panel filters-panel">
-              <p class="panel-label">Max value · ${{ valueMax.toLocaleString() }}</p>
+              <p class="panel-label">Max value · {{ formatMoney(valueMax) }}</p>
               <input type="range" v-model.number="valueMax" min="50" max="5000" step="50" class="value-slider">
               <p class="panel-label" style="margin-top:16px;">Condition</p>
               <div class="cond-chips">
@@ -328,7 +329,7 @@ watch(viewMode, async () => {
               </p>
               <div class="card-value-row">
                 <span class="card-meta">{{ item.location || (item.distance + ' mi away') }}</span>
-                <p class="card-value">${{ (item.value || 0).toLocaleString() }}</p>
+                <p class="card-value">{{ formatMoney(item.value) }}</p>
               </div>
             </div>
           </a>

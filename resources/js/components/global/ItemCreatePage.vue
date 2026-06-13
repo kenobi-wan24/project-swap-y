@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { ITEM_CATEGORIES_WITH_OTHER } from '../../constants/categories'
+import { currency } from '../../constants/currency'
 
 // ── step state ────────────────────────────────────────────────────────────────
 const currentStep = ref(1)
@@ -143,6 +144,19 @@ function goNext() {
 }
 function goBack() { if (currentStep.value > 1) currentStep.value-- }
 
+// ── exit to dashboard ─────────────────────────────────────────────────────────
+const showExitConfirm = ref(false)
+const isDirty = computed(() =>
+  images.value.length > 0 || title.value.trim() || category.value || condition.value ||
+  location.value || description.value.trim() || estimatedValue.value ||
+  lookingFor.value.trim() || swapConditions.value.length > 0
+)
+function requestExit() {
+  if (isDirty.value) showExitConfirm.value = true
+  else window.location.href = '/dashboard'
+}
+function discardAndExit() { window.location.href = '/dashboard' }
+
 // ── submit ────────────────────────────────────────────────────────────────────
 async function postItem() {
   loading.value = true
@@ -202,12 +216,12 @@ async function postItem() {
 
     <!-- Top bar -->
     <div style="background:#fff;border-bottom:1px solid #EDE8E0;padding:16px 24px;position:sticky;top:0;z-index:100;">
-      <div style="max-width:640px;margin:0 auto;">
+      <div style="max-width:800px;margin:0 auto;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <a href="/dashboard" aria-label="Back to dashboard" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;border:1.5px solid #EDE8E0;color:#6b7280;text-decoration:none;">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-            </a>
+            <button @click="requestExit" aria-label="Exit to dashboard" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;border:1.5px solid #EDE8E0;background:#fff;color:#6b7280;cursor:pointer;padding:0;">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
             <div>
               <p style="font-size:0.62rem;font-weight:700;color:#ED730C;text-transform:uppercase;letter-spacing:.08em;margin:0 0 1px;">Step {{ currentStep }} of {{ totalSteps }}</p>
               <h1 style="font-size:1.1rem;font-weight:800;color:#3A3330;margin:0;">{{ stepLabels[currentStep - 1] }}</h1>
@@ -224,7 +238,7 @@ async function postItem() {
     </div>
 
     <!-- Content -->
-    <div style="max-width:640px;margin:0 auto;padding:28px 24px 120px;">
+    <div style="max-width:800px;margin:0 auto;padding:28px 24px 120px;">
 
       <!-- ════════════ STEP 1 — Photos ════════════ -->
       <div v-if="currentStep === 1">
@@ -296,7 +310,7 @@ async function postItem() {
             </select>
           </div>
           <div>
-            <label for="it-value" style="font-size:0.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5c5751;display:block;margin-bottom:6px;">Est. Value (₱)</label>
+            <label for="it-value" style="font-size:0.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5c5751;display:block;margin-bottom:6px;">Est. Value ({{ currency.symbol }})</label>
             <input id="it-value" v-model="estimatedValue" type="number" min="0" inputmode="numeric" placeholder="e.g., 2500" style="width:100%;padding:11px 13px;border:1.5px solid #EDE8E0;border-radius:11px;font-size:0.9rem;font-family:'DM Sans',sans-serif;outline:none;color:#3A3330;box-sizing:border-box;">
           </div>
         </div>
@@ -350,8 +364,8 @@ async function postItem() {
     </div>
 
     <!-- ══════════════════════════════ STICKY BOTTOM NAV ══════════════════════════════ -->
-    <div style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #EDE8E0;padding:16px 24px;z-index:100;">
-      <div style="max-width:640px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+    <div style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #EDE8E0;padding:16px 24px;z-index:110;">
+      <div style="max-width:800px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;">
         <button v-if="currentStep > 1" @click="goBack" style="padding:13px 24px;background:#fff;color:#3A3330;font-size:0.9rem;font-weight:700;border:1.5px solid #EDE8E0;border-radius:12px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:8px;">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
           Back
@@ -372,6 +386,19 @@ async function postItem() {
             Posting...
           </span>
         </button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ EXIT CONFIRM ══════════════════════════════ -->
+    <div v-if="showExitConfirm" @click.self="showExitConfirm = false" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;backdrop-filter:blur(4px);">
+      <div role="dialog" aria-modal="true" aria-labelledby="exit-confirm-title" style="background:#fff;border-radius:20px;padding:28px 24px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.18);">
+        <div style="width:56px;height:56px;background:#FEF2F2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+          <svg width="24" height="24" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </div>
+        <h2 id="exit-confirm-title" style="font-size:1.15rem;font-weight:800;color:#3A3330;margin:0 0 8px;">Discard this listing?</h2>
+        <p style="font-size:0.85rem;color:#6b7280;margin:0 0 22px;line-height:1.55;">If you leave now, your photos and details won't be saved.</p>
+        <button @click="showExitConfirm = false" style="display:block;width:100%;padding:13px;background:#ED730C;color:#fff;font-size:0.9rem;font-weight:700;border:none;border-radius:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;box-sizing:border-box;">Keep Editing</button>
+        <button @click="discardAndExit" style="display:block;width:100%;padding:13px;background:#fff;color:#dc2626;font-size:0.9rem;font-weight:700;border:1.5px solid #fecaca;border-radius:12px;cursor:pointer;font-family:'DM Sans',sans-serif;box-sizing:border-box;">Discard & Exit</button>
       </div>
     </div>
 

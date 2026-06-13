@@ -358,13 +358,24 @@
         }
         /* always-visible compact search pill on mobile (no expanding row) */
         .mobile-search-pill { display: flex; flex: 1; min-width: 0; }
-        /* the nav⇄search swap is desktop-only */
-        .header-center { display: none; }
+        /* smaller logo frees width so the pill placeholder doesn't truncate */
+        .nav-logo { height: 36px !important; }
+        /* the nav⇄search swap is desktop-only — !important because the
+           .header-center base rule below this media query sets display:flex
+           and would otherwise win the cascade */
+        .header-center { display: none !important; }
     }
 
     @media (min-width: 768px) {
         .mobile-only { display: none !important; }
         .mobile-hamburger { display: none !important; }
+    }
+
+    /* On very narrow phones the pill text and the button label fight for
+       space — drop the button's word, keep the magnifier icon */
+    @media (max-width: 400px) {
+        .mobile-search-pill-btn-label { display: none; }
+        .mobile-search-pill-btn { padding: 0 13px; }
     }
 
     /* ── HEADER CENTER: nav links ⇄ compact search swap ──
@@ -433,7 +444,7 @@
         {{-- LOGO --}}
         <a href="{{ auth()->check() ? route('items') : route('home') }}"
            style="text-decoration:none;flex-shrink:0;display:flex;align-items:center;">
-            <img src="{{ asset('images/logo-swapy.png') }}" alt="SWAPY"
+            <img src="{{ asset('images/logo-swapy.png') }}" alt="SWAPY" class="nav-logo"
                  style="height:48px;object-fit:contain;display:block;">
         </a>
 
@@ -631,7 +642,7 @@
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
                 </svg>
-                Search
+                <span class="mobile-search-pill-btn-label">Search</span>
             </span>
         </a>
 

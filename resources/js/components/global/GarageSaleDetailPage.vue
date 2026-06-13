@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { formatMoney } from '../../constants/currency'
 
 const el  = document.getElementById('garage-sale-detail-app')
 const raw = JSON.parse(el?.dataset.sale || '{}')
@@ -87,7 +88,7 @@ function toggleWish(id) {
 <div style="min-height:100vh;background:#FAF8F5;font-family:DM Sans,sans-serif;">
 
   <!-- BREADCRUMB -->
-  <div style="background:#fff;border-bottom:1px solid #EDE8E0;padding:12px 40px;">
+  <div class="gsd-px" style="background:#fff;border-bottom:1px solid #EDE8E0;padding:12px 40px;">
     <div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:600;color:#9ca3af;">
       <a href="/garage-sale" style="color:#9ca3af;text-decoration:none;" onmouseover="this.style.color='#ED730C'" onmouseout="this.style.color='#9ca3af'">Garage Sales</a>
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -106,7 +107,7 @@ function toggleWish(id) {
       <div style="position:absolute;inset:0;background:linear-gradient(to bottom, transparent 30%, rgba(26,26,26,0.85) 100%);"></div>
 
       <!-- Cover content -->
-      <div style="position:absolute;bottom:0;left:0;right:0;padding:28px 40px;">
+      <div class="gsd-px" style="position:absolute;bottom:0;left:0;right:0;padding:28px 40px;">
         <div style="max-width:1280px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;">
           <div style="display:flex;align-items:flex-end;gap:18px;">
             <!-- Avatar -->
@@ -162,7 +163,7 @@ function toggleWish(id) {
 
     <!-- SELLER INFO STRIP -->
     <div style="background:#fff;border-bottom:1px solid #EDE8E0;">
-      <div style="max-width:1280px;margin:0 auto;padding:20px 40px;display:flex;align-items:center;gap:32px;flex-wrap:wrap;">
+      <div class="gsd-px" style="max-width:1280px;margin:0 auto;padding:20px 40px;display:flex;align-items:center;gap:32px;flex-wrap:wrap;">
 
         <!-- Stats -->
         <div style="display:flex;align-items:center;gap:28px;">
@@ -205,7 +206,7 @@ function toggleWish(id) {
   </div>
 
   <!-- ITEMS SECTION -->
-  <div style="max-width:1280px;margin:0 auto;padding:36px 40px 72px;">
+  <div class="gsd-px" style="max-width:1280px;margin:0 auto;padding:36px 40px 72px;">
 
     <!-- Section header + filters -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
@@ -305,7 +306,7 @@ function toggleWish(id) {
           <div style="margin-bottom:10px;">
             <p style="font-size:0.6rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin:0 0 2px;">Est. Value</p>
             <p style="font-size:1.05rem;font-weight:900;color:#1A1A1A;margin:0;letter-spacing:-.02em;">
-              P{{ Number(item.value).toLocaleString() }}
+              {{ formatMoney(item.value) }}
             </p>
           </div>
 
@@ -334,3 +335,10 @@ function toggleWish(id) {
   </div>
 </div>
 </template>
+
+<style scoped>
+/* desktop side padding is inline (40px); relax it on phones */
+@media (max-width: 768px) {
+  .gsd-px { padding-left: 18px !important; padding-right: 18px !important; }
+}
+</style>

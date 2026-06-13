@@ -1,6 +1,7 @@
 <script setup>
 // filepath: resources/js/components/onboarding/OnboardingFlow.vue
 import { ref, computed, onMounted } from 'vue'
+import { formatMoney } from '../../constants/currency'
 import { ITEM_CATEGORIES } from '../../constants/categories'
 
 // ── entrance animation ────────────────────────────────────────────────────────
@@ -60,7 +61,7 @@ function onMaxInput() {
 
 const valueRangeLabel = computed(() => {
     if (valueMin.value === 0 && valueMax.value === VALUE_CAP) return 'Any value'
-    return `$${Number(valueMin.value).toLocaleString()} – $${Number(valueMax.value).toLocaleString()}`
+    return `${formatMoney(valueMin.value)} – ${formatMoney(valueMax.value)}`
 })
 
 const maxDistance  = ref(25)
@@ -163,7 +164,7 @@ function trackStyle(val, min, max) {
                 key="step1"
                 style="width:100%;max-width:640px;padding:40px 24px 32px;"
             >
-                <h1 style="font-size:2.125rem;font-weight:800;color:#3A3330;text-align:center;margin-bottom:10px;line-height:1.2;">
+                <h1 style="font-size:clamp(1.5rem, 5vw, 2.125rem);font-weight:800;color:#3A3330;text-align:center;margin-bottom:10px;line-height:1.2;">
                     What do you like to swap?
                 </h1>
                 <p style="font-size:0.92rem;color:#6b7280;text-align:center;margin:0 auto 36px;max-width:440px;line-height:1.5;">
@@ -217,8 +218,8 @@ function trackStyle(val, min, max) {
                         <input type="range" min="0" :max="VALUE_CAP" step="50" v-model.number="valueMax" @input="onMaxInput" :style="trackStyle(valueMax, 0, VALUE_CAP)" style="flex:1;">
                     </div>
                     <div style="display:flex;justify-content:space-between;margin-top:4px;padding-left:40px;">
-                        <span style="font-size:0.75rem;color:#9ca3af;">$0</span>
-                        <span style="font-size:0.75rem;color:#9ca3af;">${{ VALUE_CAP.toLocaleString() }}</span>
+                        <span style="font-size:0.75rem;color:#9ca3af;">{{ formatMoney(0) }}</span>
+                        <span style="font-size:0.75rem;color:#9ca3af;">{{ formatMoney(VALUE_CAP) }}</span>
                     </div>
                     <p style="font-size:0.78rem;color:#9ca3af;margin-top:8px;">
                         Swaps valued inside this range score higher. Leave it at full range if value doesn't matter to you.
@@ -238,7 +239,7 @@ function trackStyle(val, min, max) {
                 <!-- Notification Frequency -->
                 <div style="margin-bottom:36px;">
                     <p style="font-size:0.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;margin-bottom:14px;">Notification Frequency</p>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+                    <div class="onb-notif-grid">
                         <div
                             v-for="opt in notifOptions"
                             :key="opt.id"
@@ -278,11 +279,11 @@ function trackStyle(val, min, max) {
                 key="step2"
                 style="width:100%;max-width:700px;padding:40px 24px 32px;text-align:center;"
             >
-                <h1 style="font-size:2.5rem;font-weight:800;color:#3A3330;margin-bottom:40px;line-height:1.15;">
+                <h1 style="font-size:clamp(1.6rem, 5.5vw, 2.5rem);font-weight:800;color:#3A3330;margin-bottom:40px;line-height:1.15;">
                     Got something to swap?
                 </h1>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:36px;">
+                <div class="onb-intent-grid">
 
                     <!-- Post -->
                     <div
@@ -395,4 +396,15 @@ function trackStyle(val, min, max) {
 
 <style scoped>
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.onb-notif-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.onb-intent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 36px; }
+@media (max-width: 640px) {
+  /* option cards have a title + description — three across is unreadable on phones;
+     extra gap so the floating "Recommended" badge (top:-11px) clears the card above */
+  .onb-notif-grid { grid-template-columns: 1fr; gap: 18px; }
+}
+@media (max-width: 560px) {
+  .onb-intent-grid { grid-template-columns: 1fr; }
+}
 </style>

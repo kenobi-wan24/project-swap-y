@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { formatMoney } from '../../constants/currency'
 
 const el      = document.getElementById('item-detail-app')
 const item    = ref(JSON.parse(el?.dataset.item || '{}'))
@@ -24,13 +25,13 @@ const details = computed(() => {
   if (item.value.category)  d.push({ label: 'Category',   value: item.value.category })
   if (item.value.condition) d.push({ label: 'Condition',  value: item.value.condition, hl: true })
   if (item.value.location)  d.push({ label: 'Location',   value: item.value.location })
-  if (item.value.value)     d.push({ label: 'Est. Value', value: '₱' + Number(item.value.value).toLocaleString() })
+  if (item.value.value)     d.push({ label: 'Est. Value', value: formatMoney(item.value.value) })
   return d
 })
 
 const owner = computed(() => item.value.owner || {})
 const ownerFirst = computed(() => (owner.value.name || 'the owner').split(' ')[0])
-const valueLabel = computed(() => item.value.value ? '₱' + Number(item.value.value).toLocaleString() : null)
+const valueLabel = computed(() => item.value.value ? formatMoney(item.value.value) : null)
 
 const safetyTips = [
   'Meet in a well-lit, public place',
@@ -225,7 +226,7 @@ function requireAuth() { if (isGuest.value) { showModal.value = true; return fal
   <!-- ══ GUEST MODAL ══ -->
   <Transition name="modal">
     <div v-if="showModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;backdrop-filter:blur(4px);" @click.self="showModal = false">
-      <div style="background:#fff;border-radius:24px;padding:40px 36px;max-width:420px;width:100%;position:relative;box-shadow:0 24px 60px rgba(0,0,0,0.18);">
+      <div class="signin-modal-panel" style="background:#fff;border-radius:24px;padding:40px 36px;max-width:420px;width:100%;position:relative;box-shadow:0 24px 60px rgba(0,0,0,0.18);">
         <button @click="showModal = false" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border:none;background:#f3f4f6;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">
           <svg width="14" height="14" fill="none" stroke="#6b7280" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
@@ -245,5 +246,9 @@ function requireAuth() { if (isGuest.value) { showModal.value = true; return fal
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 @media (max-width: 900px) {
   .detail-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 480px) {
+  /* inline desktop padding is too heavy for phone-width panels */
+  .signin-modal-panel { padding: 28px 20px !important; }
 }
 </style>

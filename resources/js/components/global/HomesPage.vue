@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { currency, formatMoney, setCurrencyFromCountry } from '../../constants/currency'
 
 const el    = document.getElementById('homes-app')
 const homes = ref(JSON.parse(el?.dataset.homes || '[]'))
@@ -39,6 +40,7 @@ onMounted(async () => {
     )
     const data = await r.json()
     const addr = data.address || {}
+    if (addr.country_code) setCurrencyFromCountry(addr.country_code)
     cityName.value = addr.city || addr.town || addr.municipality || ''
     areaName.value = addr.suburb || addr.neighbourhood || addr.quarter || addr.village || cityName.value
     nearbyCity.value = 'General Santos'
@@ -139,8 +141,8 @@ const typeCfg = {
 }
 
 function formatValue(home) {
-  if (home.type === 'Sell') return '₱' + (home.value / 1000000).toFixed(1) + 'M'
-  return '₱' + home.value.toLocaleString() + '/mo'
+  if (home.type === 'Sell') return currency.value.symbol + (home.value / 1000000).toFixed(1) + 'M'
+  return formatMoney(home.value) + '/mo'
 }
 
 const wishlisted = ref(new Set())
