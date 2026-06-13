@@ -76,6 +76,9 @@ class GarageSaleController extends Controller
         ]);
     }
 
+    /** "See all" sections, mirroring the horizontal rows on the browse page. */
+    public const SECTIONS = ['featured', 'popular', 'nearby', 'near-you'];
+
     public function index()
     {
         $sellers = GarageSale::with(['seller', 'items'])
@@ -83,35 +86,71 @@ class GarageSaleController extends Controller
             ->latest('updated_at')
             ->take(40)
             ->get()
-            ->map(function (GarageSale $sale) {
-                $seller   = $sale->seller;
-                $username = $seller->username ?? 'member' . $sale->user_id;
-
-                // "Area, City" → area / city for the page's location sections
-                $parts = array_map('trim', explode(',', $sale->location ?? ''));
-                $area  = $parts[0] ?? '';
-                $city  = $parts[count($parts) - 1] ?? '';
-
-                $cover = media_url($sale->cover_image)
-                      ?? media_url($sale->items->first()?->image_path);
-
-                return [
-                    'id'           => $sale->id,
-                    'is_promoted'  => (bool) $sale->is_promoted,
-                    'username'     => $username,
-                    'name'         => $seller->name ?? 'Member',
-                    'avatar'       => 'https://i.pravatar.cc/96?u=' . $username,
-                    'cover'        => $cover,
-                    'item_count'   => $sale->items->count(),
-                    'distance'     => number_format((($sale->id * 37) % 80) / 10 + 0.3, 1),
-                    'rating'       => number_format(4.5 + (($sale->id * 7) % 6) / 10, 1),
-                    'active_since' => 'Active ' . $sale->updated_at->diffForHumans(),
-                    'categories'   => $sale->items->pluck('category')->unique()->take(3)->values()->all(),
-                    'city'         => $city,
-                    'area'         => $area,
-                ];
-            });
+            ->map(fn (GarageSale $sale) => $this->shapeSale($sale));
 
         return view('pages.garage-sale', compact('sellers'));
+    }
+
+    /** Full listing for one browse section (featured filters to promoted). */
+    public function section(string $key)
+    {
+        abort_unless(in_array($key, self::SECTIONS, true), 404);
+
+        $query = GarageSale::with(['seller', 'items'])->where('status', 'active');
+
+        if ($key === 'featured') {
+            $query->where('is_promoted', true);
+        }
+
+        $sellers = $query->latest('updated_at')->take(60)->get()->map(fn (GarageSale $sale) => $this->shapeSale($sale));
+
+        // The map is an exploration surface — every sale with coordinates,
+        // not just this section, so panning reveals sales everywhere.
+        $mapSellers = GarageSale::with(['seller', 'items'])
+            ->where('status', 'active')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->take(200)
+            ->get()
+            ->map(fn (GarageSale $sale) => $this->shapeSale($sale));
+
+        return view('pages.garage-sale-section', [
+            'section'    => $key,
+            'sellers'    => $sellers,
+            'mapSellers' => $mapSellers,
+            'total'      => $sellers->count(),
+        ]);
+    }
+
+    private function shapeSale(GarageSale $sale): array
+    {
+        $seller   = $sale->seller;
+        $username = $seller->username ?? 'member' . $sale->user_id;
+
+        // "Area, City" → area / city for the page's location sections
+        $parts = array_map('trim', explode(',', $sale->location ?? ''));
+        $area  = $parts[0] ?? '';
+        $city  = $parts[count($parts) - 1] ?? '';
+
+        $cover = media_url($sale->cover_image)
+              ?? media_url($sale->items->first()?->image_path);
+
+        return [
+            'id'           => $sale->id,
+            'is_promoted'  => (bool) $sale->is_promoted,
+            'latitude'     => $sale->latitude !== null ? (float) $sale->latitude : null,
+            'longitude'    => $sale->longitude !== null ? (float) $sale->longitude : null,
+            'username'     => $username,
+            'name'         => $seller->name ?? 'Member',
+            'avatar'       => 'https://i.pravatar.cc/96?u=' . $username,
+            'cover'        => $cover,
+            'item_count'   => $sale->items->count(),
+            'distance'     => number_format((($sale->id * 37) % 80) / 10 + 0.3, 1),
+            'rating'       => number_format(4.5 + (($sale->id * 7) % 6) / 10, 1),
+            'active_since' => 'Active ' . $sale->updated_at->diffForHumans(),
+            'categories'   => $sale->items->pluck('category')->unique()->take(3)->values()->all(),
+            'city'         => $city,
+            'area'         => $area,
+        ];
     }
 }

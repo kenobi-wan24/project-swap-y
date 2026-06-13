@@ -101,7 +101,12 @@ const categories  = ['All', 'Design & Creative', 'Tech & Digital', 'Education & 
 const sortOptions = ['Best Match', 'Top Rated', 'Nearest First', 'Newest']
 
 function closeAllPanels() { showSortDropdown.value = false; showCatPanel.value = false }
-function doSearch() { search.value = searchInput.value }
+function doSearch() {
+  const params = new URLSearchParams()
+  if (searchInput.value.trim())   params.set('q', searchInput.value.trim())
+  if (locationInput.value.trim()) params.set('location', locationInput.value.trim())
+  window.location.href = '/search?' + params.toString()
+}
 
 const filtered = computed(() => {
   let list = [...allServices.value]
@@ -133,28 +138,15 @@ async function loadMore() {
        STICKY NAV SEARCH
   ═══════════════════════════════════════════ -->
   <Teleport to="#nav-sticky-search">
-    <div style="max-width:760px;margin:0 auto;" @click.stop>
-      <div class="sticky-search-desktop" style="background:#fff;border-radius:999px;display:flex;align-items:center;padding:6px 6px 6px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1.5px solid #EBEBEB;">
-        <div style="flex:1;display:flex;align-items:center;gap:8px;border-right:1px solid #EBEBEB;padding-right:16px;">
-          <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-          <input v-model="searchInput" type="text" placeholder="What are you looking for?" style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:100%;" @keydown.enter="doSearch">
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;padding:0 14px;">
-          <svg width="13" height="13" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-          <input v-model="locationInput" type="text" placeholder="Location" style="border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:90px;">
-        </div>
-        <button @click="doSearch" style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:12px 28px;font-size:0.875rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(237,115,12,0.4);" onmouseover="this.style.background='#d4620a'" onmouseout="this.style.background='#ED730C'">Search</button>
-      </div>
-      <div class="sticky-search-mobile" style="background:#fff;border-radius:999px;align-items:center;padding:5px 5px 5px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.10);border:1.5px solid #EBEBEB;">
-        <svg width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:8px;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input v-model="searchInput" type="text" placeholder="Search" style="flex:1;border:none;outline:none;font-size:0.875rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;min-width:0;" @keydown.enter="doSearch">
-        <div style="display:flex;align-items:center;gap:4px;padding:0 10px;border-left:1px solid #EBEBEB;flex-shrink:0;">
-          <svg width="12" height="12" fill="#9ca3af" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-          <input v-model="locationInput" type="text" placeholder="Location" style="border:none;outline:none;font-size:0.82rem;color:#1A1A1A;background:transparent;font-family:'DM Sans',sans-serif;width:70px;">
-        </div>
-        <button @click="doSearch" style="background:#ED730C;color:#fff;border:none;border-radius:999px;padding:9px 18px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;">Search</button>
-      </div>
-    </div>
+    <!-- identical markup to the search-page nav bar (navigation.blade.php) -->
+    <form class="nav-search-bar" role="search" @submit.prevent="doSearch" @click.stop>
+      <svg class="nsb-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
+      <input v-model="searchInput" type="search" class="nsb-q" placeholder="What are you looking for?" enterkeyhint="search" autocomplete="off" aria-label="Search">
+      <span class="nsb-divider"></span>
+      <svg class="nsb-icon" width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+      <input v-model="locationInput" type="text" class="nsb-loc" placeholder="Location" aria-label="Location">
+      <button type="submit" class="nsb-btn">Search</button>
+    </form>
   </Teleport>
 
   <!-- ═══════════════════════════════════════════
@@ -207,7 +199,7 @@ async function loadMore() {
           <h2 class="section-title">Featured Services</h2>
           <p class="section-sub">Promoted providers from the community</p>
         </div>
-        <a href="#" class="see-all">See all →</a>
+        <a href="/services/section/featured" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
         <ServiceCard v-for="svc in featuredServices" :key="'feat-'+svc.id" class="hscroll-card"
@@ -226,7 +218,7 @@ async function loadMore() {
           <h2 class="section-title">Popular in {{ cityName || 'Your City' }}</h2>
           <p class="section-sub">Most requested services in your city</p>
         </div>
-        <a href="#" class="see-all">See all →</a>
+        <a href="/services/section/popular" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
         <ServiceCard v-for="svc in cityServices" :key="'city-'+svc.id" class="hscroll-card"
@@ -245,7 +237,7 @@ async function loadMore() {
           <h2 class="section-title">Available in {{ nearbyCity }}</h2>
           <p class="section-sub">Service providers from a nearby city</p>
         </div>
-        <a href="#" class="see-all">See all →</a>
+        <a href="/services/section/nearby" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
         <ServiceCard v-for="svc in nearbyCityServices" :key="'near-'+svc.id" class="hscroll-card"
@@ -264,7 +256,7 @@ async function loadMore() {
           <h2 class="section-title">Services near {{ areaName || 'Your Area' }}</h2>
           <p class="section-sub">Providers closest to your location</p>
         </div>
-        <a href="#" class="see-all">See all →</a>
+        <a href="/services/section/near-you" class="see-all">See all →</a>
       </div>
       <div class="hscroll">
         <ServiceCard v-for="svc in areaServices" :key="'area-'+svc.id" class="hscroll-card"

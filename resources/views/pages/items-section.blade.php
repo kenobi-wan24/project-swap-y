@@ -6,6 +6,7 @@
     id="items-section-app"
     data-section='{{ $section }}'
     data-listings='@json($listings)'
+    data-map-listings='@json($mapListings)'
     data-total='{{ $total }}'
 ></div>
 @endsection

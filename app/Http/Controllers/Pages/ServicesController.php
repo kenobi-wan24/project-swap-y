@@ -81,10 +81,13 @@ class ServicesController extends Controller
         'swap_potential', 'mutual_interest', 'local_match',
     ];
 
+    private const PALETTE = ['#ED730C', '#14b8a6', '#8b5cf6', '#f59e0b', '#ec4899', '#149189'];
+
+    /** "See all" sections, mirroring the horizontal rows on the browse page. */
+    public const SECTIONS = ['featured', 'popular', 'nearby', 'near-you'];
+
     public function index(Request $request)
     {
-        $palette = ['#ED730C', '#14b8a6', '#8b5cf6', '#f59e0b', '#ec4899', '#149189'];
-
         $services = Service::with(['provider', 'images'])
             ->where('status', 'active')
             ->when($request->filled('category') && $request->category !== 'All',
@@ -92,44 +95,80 @@ class ServicesController extends Controller
             ->latest()
             ->take(40)
             ->get()
-            ->map(function (Service $service) use ($palette) {
-                $providerName = $service->provider->name ?? 'Member';
-                $initials = collect(explode(' ', trim($providerName)))
-                    ->filter()
-                    ->take(2)
-                    ->map(fn ($p) => strtoupper(substr($p, 0, 1)))
-                    ->implode('');
-
-                $img = $service->images->firstWhere('is_primary', true)
-                    ?? $service->images->first();
-
-                // "Area, City" â†’ area / city for the page's location sections
-                $parts = array_map('trim', explode(',', $service->location ?? ''));
-                $area  = $parts[0] ?? '';
-                $city  = $parts[count($parts) - 1] ?? '';
-
-                $matchType = self::MATCH_TYPES[$service->id % count(self::MATCH_TYPES)];
-
-                return [
-                    'id'                => $service->id,
-                    'is_promoted'       => (bool) $service->is_promoted,
-                    'title'             => $service->title,
-                    'description'       => $service->description ?? '',
-                    'image'             => $img ? media_url($img->path) : null,
-                    'category'          => $service->category,
-                    'tag'               => self::CATEGORY_TAGS[$service->category] ?? $service->category,
-                    'city'              => $city,
-                    'area'              => $area,
-                    'rating'            => (float) number_format(4.5 + (($service->id * 7) % 6) / 10, 1),
-                    'provider'          => $providerName,
-                    'provider_initials' => $initials ?: 'M',
-                    'provider_color'    => $palette[$service->user_id % count($palette)],
-                    'match_type'        => $matchType,
-                    'match_percent'     => 65 + ($service->id * 13) % 34,
-                    'is_match'          => $service->id % 3 !== 0,
-                ];
-            });
+            ->map(fn (Service $service) => $this->shapeService($service));
 
         return view('pages.services', compact('services'));
+    }
+
+    /** Full listing for one browse section (featured filters to promoted). */
+    public function section(string $key)
+    {
+        abort_unless(in_array($key, self::SECTIONS, true), 404);
+
+        $query = Service::with(['provider', 'images'])->where('status', 'active');
+
+        if ($key === 'featured') {
+            $query->where('is_promoted', true);
+        }
+
+        $services = $query->latest()->take(60)->get()->map(fn (Service $service) => $this->shapeService($service));
+
+        // The map is an exploration surface — every service with coordinates,
+        // not just this section, so panning reveals providers everywhere.
+        $mapServices = Service::with(['provider', 'images'])
+            ->where('status', 'active')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->take(200)
+            ->get()
+            ->map(fn (Service $service) => $this->shapeService($service));
+
+        return view('pages.services-section', [
+            'section'     => $key,
+            'services'    => $services,
+            'mapServices' => $mapServices,
+            'total'       => $services->count(),
+        ]);
+    }
+
+    private function shapeService(Service $service): array
+    {
+        $providerName = $service->provider->name ?? 'Member';
+        $initials = collect(explode(' ', trim($providerName)))
+            ->filter()
+            ->take(2)
+            ->map(fn ($p) => strtoupper(substr($p, 0, 1)))
+            ->implode('');
+
+        $img = $service->images->firstWhere('is_primary', true)
+            ?? $service->images->first();
+
+        // "Area, City" → area / city for the page's location sections
+        $parts = array_map('trim', explode(',', $service->location ?? ''));
+        $area  = $parts[0] ?? '';
+        $city  = $parts[count($parts) - 1] ?? '';
+
+        $matchType = self::MATCH_TYPES[$service->id % count(self::MATCH_TYPES)];
+
+        return [
+            'id'                => $service->id,
+            'is_promoted'       => (bool) $service->is_promoted,
+            'title'             => $service->title,
+            'description'       => $service->description ?? '',
+            'image'             => $img ? media_url($img->path) : null,
+            'category'          => $service->category,
+            'latitude'          => $service->latitude !== null ? (float) $service->latitude : null,
+            'longitude'         => $service->longitude !== null ? (float) $service->longitude : null,
+            'tag'               => self::CATEGORY_TAGS[$service->category] ?? $service->category,
+            'city'              => $city,
+            'area'              => $area,
+            'rating'            => (float) number_format(4.5 + (($service->id * 7) % 6) / 10, 1),
+            'provider'          => $providerName,
+            'provider_initials' => $initials ?: 'M',
+            'provider_color'    => self::PALETTE[$service->user_id % count(self::PALETTE)],
+            'match_type'        => $matchType,
+            'match_percent'     => 65 + ($service->id * 13) % 34,
+            'is_match'          => $service->id % 3 !== 0,
+        ];
     }
 }

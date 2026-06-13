@@ -127,10 +127,22 @@ class ItemsController extends Controller
             fn ($item) => $this->shapeListing($item, $authUser, $userPreference, $myItems)
         );
 
+        // The map is an exploration surface: it shows every item that has
+        // coordinates (not just this section), so panning reveals listings
+        // everywhere. Still type-isolated — only items here.
+        $mapListings = Item::with(['user', 'images'])
+            ->where('status', 'active')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->take(200)
+            ->get()
+            ->map(fn ($item) => $this->shapeListing($item, $authUser, $userPreference, $myItems));
+
         return view('pages.items-section', [
-            'section'  => $key,
-            'listings' => $listings,
-            'total'    => $listings->count(),
+            'section'     => $key,
+            'listings'    => $listings,
+            'mapListings' => $mapListings,
+            'total'       => $listings->count(),
         ]);
     }
 

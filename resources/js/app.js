@@ -7,14 +7,18 @@ import AuthTabs       from './components/auth/Authtabs.vue'
 
 import ItemsPage        from './components/global/ItemsPage.vue'
 import ItemsSectionPage from './components/global/ItemsSectionPage.vue'
+import SearchResultsPage from './components/global/SearchResultsPage.vue'
 import HomesPage      from './components/global/HomesPage.vue'
+import HomesSectionPage from './components/global/HomesSectionPage.vue'
 import HomeDetailPage from './components/global/HomeDetailPage.vue'
 import HomeCreatePage from './components/global/HomeCreatePage.vue'
 import GarageSalePage       from './components/global/GarageSalePage.vue'
+import GarageSaleSectionPage from './components/global/GarageSaleSectionPage.vue'
 import GarageSaleDetailPage from './components/global/GarageSaleDetailPage.vue'
 import GarageSaleCreatePage from './components/global/GarageSaleCreatePage.vue'
 import ItemCreatePage        from './components/global/ItemCreatePage.vue'
 import ServicesPage from './components/global/ServicesPage.vue'
+import ServicesSectionPage from './components/global/ServicesSectionPage.vue'
 import ServiceCreatePage from './components/global/ServiceCreatePage.vue'
 import ItemDetailPage from './components/global/ItemDetailPage.vue'
 import HowItWorksPage from './components/global/HowItWorks.vue'
@@ -52,9 +56,19 @@ if (document.getElementById('items-section-app')) {
     createApp(ItemsSectionPage).mount('#items-section-app')
 }
 
+// Universal search results
+if (document.getElementById('search-app')) {
+    createApp(SearchResultsPage).mount('#search-app')
+}
+
 // Homes
 if (document.getElementById('homes-app')) {
     createApp(HomesPage).mount('#homes-app')
+}
+
+// Homes section ("See all" view)
+if (document.getElementById('homes-section-app')) {
+    createApp(HomesSectionPage).mount('#homes-section-app')
 }
 
 // Home Detail
@@ -70,6 +84,11 @@ if (document.getElementById('home-create-app')) {
 // Garage Sale
 if (document.getElementById('garage-sale-app')) {
     createApp(GarageSalePage).mount('#garage-sale-app')
+}
+
+// Garage Sale section ("See all" view)
+if (document.getElementById('garage-sale-section-app')) {
+    createApp(GarageSaleSectionPage).mount('#garage-sale-section-app')
 }
 
 // Garage Sale Detail
@@ -97,6 +116,11 @@ if (document.getElementById('services-app')) {
     createApp(ServicesPage, {
         services: JSON.parse(document.getElementById('services-app')?.dataset.services || '[]'),
     }).mount('#services-app')
+}
+
+// Services section ("See all" view)
+if (document.getElementById('services-section-app')) {
+    createApp(ServicesSectionPage).mount('#services-section-app')
 }
 
 // Service Create

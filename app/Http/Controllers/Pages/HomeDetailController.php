@@ -70,6 +70,8 @@ class HomeDetailController extends Controller
             'type'          => $home->type,
             'title'         => $home->title,
             'location'      => $home->location,
+            'latitude'      => $home->latitude !== null ? (float) $home->latitude : null,
+            'longitude'     => $home->longitude !== null ? (float) $home->longitude : null,
             'distance'      => number_format((($home->id * 37) % 80) / 10 + 0.3, 1),
             'beds'          => $home->beds ?: 'Studio',
             'baths'         => $home->baths ?? 1,

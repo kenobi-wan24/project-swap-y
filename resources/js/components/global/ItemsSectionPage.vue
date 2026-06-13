@@ -31,6 +31,10 @@ function switchSection(key) {
 
 // ── Data (real listings from the server) ──────────────────────────────────────
 const allItems = ref(parseDataset('listings'))
+// Every item with coords drives the map (independent of the card filter), so
+// panning reveals listings everywhere — still items-only on the items page.
+const mapPool  = ref(parseDataset('mapListings'))
+const userPos  = ref(null)
 
 function milesBetween(lat1, lng1, lat2, lng2) {
   const toRad = d => (d * Math.PI) / 180
@@ -39,18 +43,21 @@ function milesBetween(lat1, lng1, lat2, lng2) {
             Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(toRad(lng2 - lng1) / 2) ** 2
   return 2 * R * Math.asin(Math.sqrt(a))
 }
+function withDistance(list, lat, lng) {
+  return list.map(i => ({
+    ...i,
+    distance: i.latitude && i.longitude ? milesBetween(lat, lng, i.latitude, i.longitude).toFixed(1) : null,
+  }))
+}
 
-// Real distances once the visitor shares their position; until then the
-// cards show the listing's location text and popups omit distance.
+// Real distances + city-first map centering once the visitor shares position.
 onMounted(() => {
   navigator.geolocation?.getCurrentPosition(pos => {
     const { latitude, longitude } = pos.coords
-    allItems.value = allItems.value.map(i => ({
-      ...i,
-      distance: i.latitude && i.longitude
-        ? milesBetween(latitude, longitude, i.latitude, i.longitude).toFixed(1)
-        : null,
-    }))
+    userPos.value  = [latitude, longitude]
+    allItems.value = withDistance(allItems.value, latitude, longitude)
+    mapPool.value  = withDistance(mapPool.value, latitude, longitude)
+    map?.setView(userPos.value, 12)
   }, () => {}, { timeout: 5000 })
 })
 
@@ -98,7 +105,8 @@ const filtered = computed(() => {
   if (sortBy.value === 'Best match')         list.sort((a, b) => (b.match || 0) - (a.match || 0))
   if (sortBy.value === 'Value: Low to High') list.sort((a, b) => (a.value || 0) - (b.value || 0))
   if (sortBy.value === 'Value: High to Low') list.sort((a, b) => (b.value || 0) - (a.value || 0))
-  return list
+  // Promoted listings get sponsored placement — pinned above the rest.
+  return [...list.filter(i => i.promoted), ...list.filter(i => !i.promoted)]
 })
 
 // ── Wishlist ──────────────────────────────────────────────────────────────────
@@ -117,7 +125,7 @@ let markerLayer = null
 // General Santos City — fallback center when no listing has coordinates
 const DEFAULT_CENTER = [6.1164, 125.1716]
 
-const mappable = computed(() => filtered.value.filter(i => i.latitude && i.longitude))
+const mappable = computed(() => mapPool.value.filter(i => i.latitude && i.longitude))
 
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => (
@@ -129,6 +137,14 @@ function escapeHtml(s) {
 // reads consistently. Unscored listings (guest viewers, your own items)
 // get a small neutral dot instead.
 function pinIcon(item) {
+  if (item.promoted) {
+    const label = item.match != null ? `${item.match}% Match` : 'Promoted'
+    return L.divIcon({
+      className: 'swapy-pin-wrap',
+      html: `<div class="swapy-pin swapy-pin--promoted"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>${label}</div>`,
+      iconSize: [0, 0],
+    })
+  }
   if (item.match == null) {
     return L.divIcon({
       className: 'swapy-pin-wrap',
@@ -162,10 +178,8 @@ function popupHtml(item) {
 function renderMarkers() {
   if (!map) return
   markerLayer.clearLayers()
-
-  const bounds = []
   mappable.value.forEach(item => {
-    const marker = L.marker([item.latitude, item.longitude], { icon: pinIcon(item) })
+    const marker = L.marker([item.latitude, item.longitude], { icon: pinIcon(item), zIndexOffset: item.promoted ? 1000 : 0 })
       .bindPopup(popupHtml(item), {
         className: 'swapy-popup',
         closeButton: true,
@@ -175,14 +189,18 @@ function renderMarkers() {
     marker.on('popupopen',  () => marker.getElement()?.querySelector('.swapy-pin')?.classList.add('active'))
     marker.on('popupclose', () => marker.getElement()?.querySelector('.swapy-pin')?.classList.remove('active'))
     markerLayer.addLayer(marker)
-    bounds.push([item.latitude, item.longitude])
   })
+}
 
-  if (bounds.length) {
-    map.fitBounds(bounds, { padding: [56, 56], maxZoom: 15 })
-  } else {
-    map.setView(DEFAULT_CENTER, 13)
-  }
+// Start on the viewer's city when we know it; otherwise frame this section's
+// own listings. The full pool stays on the map to pan through.
+function setInitialView() {
+  if (!map) return
+  if (userPos.value) { map.setView(userPos.value, 12); return }
+  const pts = filtered.value.filter(i => i.latitude && i.longitude).map(i => [i.latitude, i.longitude])
+  if (pts.length) map.fitBounds(pts, { padding: [56, 56], maxZoom: 12 })
+  else if (mappable.value.length) map.fitBounds(mappable.value.map(i => [i.latitude, i.longitude]), { padding: [56, 56], maxZoom: 11 })
+  else map.setView(DEFAULT_CENTER, 12)
 }
 
 function initMap() {
@@ -194,12 +212,13 @@ function initMap() {
   }).addTo(map)
   markerLayer = L.layerGroup().addTo(map)
   renderMarkers()
+  setInitialView()
 }
 
 onMounted(() => nextTick(initMap))
 onBeforeUnmount(() => { map?.remove(); map = null })
 
-watch(filtered, () => renderMarkers())
+watch(mapPool, () => renderMarkers())
 watch(viewMode, async () => {
   await nextTick()
   map?.invalidateSize()
@@ -623,6 +642,9 @@ watch(viewMode, async () => {
 }
 .swapy-pin:hover  { transform: translate(-50%, -100%) scale(1.1); z-index: 10; }
 .swapy-pin.active { background: #ED730C; color: #fff; }
+.swapy-pin--promoted { background: #ED730C; color: #fff; padding: 8px 14px; font-size: 0.82rem; box-shadow: 0 0 0 3px rgba(237,115,12,0.30), 0 6px 16px rgba(0,0,0,0.32); }
+.swapy-pin--promoted:hover { transform: translate(-50%, -100%) scale(1.12); }
+.swapy-pin--promoted.active { background: #d4620a; }
 .swapy-pin--dot {
   width: 16px; height: 16px; padding: 0;
   background: #ED730C; border: 2.5px solid #fff;

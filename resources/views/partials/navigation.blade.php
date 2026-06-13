@@ -93,6 +93,7 @@
     }
 
     .header-row {
+        position: relative;   /* containing block for the centred scroll search */
         display: grid;
         grid-template-columns: 1fr auto 1fr;
         align-items: center;
@@ -285,47 +286,31 @@
         box-shadow: 0 2px 8px rgba(237,115,12,0.3);
     }
 
-    /* ── MOBILE SEARCH PILL ── */
+    /* ── MOBILE SEARCH PILL — appears in the header only after the hero
+       search scrolls away (toggled by #main-header.search-on) ── */
     .mobile-search-pill {
-        display: none;
+        display: none;          /* desktop: never */
         align-items: center;
-        height: 40px;
-        background: #f5f5f5;
-        border: 1.5px solid #e8e8e8;
+        gap: 9px;
+        height: 44px;
+        padding: 0 16px;        /* symmetric — no on-screen button */
+        background: #fff;
+        border: 1px solid #DDDDDD;
         border-radius: 999px;
-        overflow: hidden;
-        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        -webkit-tap-highlight-color: transparent;
         transition: box-shadow 0.2s ease, border-color 0.2s ease;
-        text-decoration: none;
     }
-    .mobile-search-pill:hover {
-        border-color: #ccc;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    .mobile-search-pill:focus-within { border-color: #C7C7C7; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+    .msp-mag { color: #6b7280; flex-shrink: 0; }
+    .msp-input {
+        flex: 1; min-width: 0; height: 100%;
+        border: none; outline: none; background: transparent;
+        font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: #1A1A1A;
     }
-    .mobile-search-pill-text {
-        flex: 1;
-        padding: 0 14px;
-        font-size: 0.82rem;
-        color: #aaa;
-        font-weight: 500;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        min-width: 0;
-    }
-    .mobile-search-pill-btn {
-        height: 100%;
-        padding: 0 14px;
-        background: #ED730C;
-        color: #fff;
-        font-size: 0.8rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
+    .msp-input::placeholder { color: #6b7280; opacity: 1; font-weight: 500; }
+    /* hide the native search-field clear "x" */
+    .msp-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 
     /* ── MOBILE AVATAR DROPDOWN ── */
     #mobile-hamburger-dropdown {
@@ -356,9 +341,22 @@
             height: 60px;
             padding: 0 1.25rem;
         }
-        /* always-visible compact search pill on mobile (no expanding row) */
-        .mobile-search-pill { display: flex; flex: 1; min-width: 0; }
-        /* smaller logo frees width so the pill placeholder doesn't truncate */
+        /* compact search pill holds the header centre but stays hidden until
+           the page's hero search scrolls away — no layout jump on reveal */
+        .mobile-search-pill {
+            display: flex; flex: 1; min-width: 0;
+            opacity: 0; visibility: hidden; transform: translateY(-6px);
+            transition: opacity .25s ease, transform .25s ease, visibility 0s linear .25s;
+        }
+        #main-header.search-on .mobile-search-pill {
+            opacity: 1; visibility: visible; transform: translateY(0);
+            transition: opacity .25s ease, transform .25s ease;
+        }
+        /* on the search page the field is always present (no scroll needed) */
+        #main-header.nav-search-page .mobile-search-pill {
+            opacity: 1 !important; visibility: visible !important; transform: none !important;
+        }
+        /* smaller logo balances the header next to the revealed pill */
         .nav-logo { height: 36px !important; }
         /* the nav⇄search swap is desktop-only — !important because the
            .header-center base rule below this media query sets display:flex
@@ -371,11 +369,9 @@
         .mobile-hamburger { display: none !important; }
     }
 
-    /* On very narrow phones the pill text and the button label fight for
-       space — drop the button's word, keep the magnifier icon */
-    @media (max-width: 400px) {
-        .mobile-search-pill-btn-label { display: none; }
-        .mobile-search-pill-btn { padding: 0 13px; }
+    /* tighten the pill on very narrow phones */
+    @media (max-width: 360px) {
+        .msp-input { font-size: 0.85rem; }
     }
 
     /* ── HEADER CENTER: nav links ⇄ compact search swap ──
@@ -383,7 +379,6 @@
        search bar fades in OVER the center nav instead of adding a row,
        so scrolling down never loses content space. */
     .header-center {
-        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -400,45 +395,64 @@
     /* ── STICKY SEARCH SLOT — compact pill in place of the center nav ── */
     #nav-sticky-search {
         position: absolute;
-        top: 50%;
-        left: 50%;
-        width: clamp(340px, 34vw, 520px);
-        transform: translate(-50%, -50%) translateY(10px) scale(0.97);
+        top: calc(50% - 21px);   /* 42px bar, vertically centred */
+        left: 0; right: 0;
+        width: min(620px, 50vw);
+        margin: 0 auto;          /* centre WITHOUT a transform so the 1px border
+                                    renders crisp, identical to the search-page bar */
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
+        transform: translateY(8px);
         transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.25s;
         z-index: 2;
     }
-    /* The teleported pill was designed for its own full-width row —
-       compact it (padding, button, shadow) so it sits inside the 80px
-       header like a proper nav pill. Inline styles need !important. */
-    #nav-sticky-search .sticky-search-desktop {
-        padding: 4px 4px 4px 16px !important;
-        /* match the navbar's bottom border */
-        border: 2px solid #EBEBEB !important;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.10) !important;
-    }
-    #nav-sticky-search .sticky-search-desktop input {
-        font-size: 0.82rem !important;
-    }
-    #nav-sticky-search .sticky-search-desktop button {
-        padding: 8px 18px !important;
-        font-size: 0.8rem !important;
-        box-shadow: none !important;
-    }
+    /* The browse pages teleport the same .nav-search-bar form into this slot,
+       so it's styled by the shared .nav-search-bar rules above — no overrides. */
     #nav-sticky-search.open {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
-        transform: translate(-50%, -50%) translateY(0) scale(1);
+        transform: none;         /* crisp at rest — no transform layer */
         transition: opacity 0.25s ease, transform 0.25s ease;
     }
     /* Soft elevation once the page is scrolled */
     #main-header.scrolled { box-shadow: 0 2px 14px rgba(0,0,0,0.06); }
+
+    /* ── SEARCH PAGE — the nav centre becomes the search bar (no nav links) ── */
+    .nav-search-bar {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        width: min(620px, 50vw);   /* width kept */
+        height: 42px;              /* slimmer so it fits the navbar */
+        padding: 0 5px 0 16px;
+        background: #fff;
+        border: 1px solid #DDDDDD;
+        border-radius: 999px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .nav-search-bar:focus-within { border-color: #C7C7C7; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+    .nsb-icon { color: #6b7280; flex-shrink: 0; }
+    .nsb-q { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.875rem; color: #1A1A1A; }
+    .nsb-divider { width: 1px; height: 20px; background: #EBEBEB; flex-shrink: 0; }
+    .nsb-loc { width: 120px; flex-shrink: 0; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.875rem; color: #1A1A1A; }
+    .nav-search-bar input::placeholder { color: #6b7280; opacity: 1; font-weight: 500; }
+    .nav-search-bar input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+    .nsb-btn {
+        flex-shrink: 0;
+        background: #ED730C; color: #fff; border: none;
+        border-radius: 999px; height: 32px; padding: 0 20px;
+        font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 800;
+        cursor: pointer; box-shadow: 0 2px 8px rgba(237,115,12,0.32);
+        transition: background 0.15s;
+    }
+    .nsb-btn:hover { background: #d4620a; }
 </style>
 
-<header id="main-header">
+@php $onSearch = request()->routeIs('search'); @endphp
+<header id="main-header" class="{{ $onSearch ? 'nav-search-page' : '' }}">
     <div class="header-row">
 
         {{-- LOGO --}}
@@ -450,9 +464,20 @@
 
         @php $currentRoute = Route::currentRouteName(); @endphp
 
-        {{-- CENTER: nav links ⇄ compact sticky search (swap, constant height) --}}
+        {{-- CENTER: nav links ⇄ compact sticky search. On the search page the
+             centre IS the search bar (the nav links are dropped). --}}
         <div class="header-center">
 
+        @if($onSearch)
+        <form action="{{ route('search') }}" method="GET" class="nav-search-bar" role="search">
+            <svg class="nsb-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
+            <input type="search" name="q" value="{{ request('q') }}" placeholder="What are you looking for?" class="nsb-q" enterkeyhint="search" autocomplete="off" aria-label="Search">
+            <span class="nsb-divider"></span>
+            <svg class="nsb-icon" width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+            <input type="text" name="location" value="{{ request('location') }}" placeholder="Location" class="nsb-loc" aria-label="Location">
+            <button type="submit" class="nsb-btn">Search</button>
+        </form>
+        @else
         <nav class="desktop-nav hidden md:flex items-center" style="gap:2px;">
 
             {{-- ITEMS --}}
@@ -499,6 +524,7 @@
 
         {{-- STICKY SEARCH SLOT — Vue teleports the page's search bar here on scroll --}}
         <div id="nav-sticky-search"></div>
+        @endif
 
         </div>
 
@@ -635,16 +661,14 @@
 
         </div>
 
-        {{-- MOBILE: simplified search pill (flex: 1 fills the space between logo and avatar) --}}
-        <a href="{{ route('items') }}" class="mobile-search-pill">
-            <span class="mobile-search-pill-text">Search swaps...</span>
-            <span class="mobile-search-pill-btn">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
-                </svg>
-                <span class="mobile-search-pill-btn-label">Search</span>
-            </span>
-        </a>
+        {{-- MOBILE: real search field — revealed on scroll. Submits via the
+             phone keyboard's search key (no on-screen button). --}}
+        <form action="{{ route('search') }}" method="GET" class="mobile-search-pill" role="search">
+            <svg class="msp-mag" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="search" name="q" value="{{ request()->routeIs('search') ? request('q') : '' }}" class="msp-input" placeholder="Search" enterkeyhint="search" autocomplete="off" aria-label="Search">
+        </form>
 
         {{-- MOBILE: avatar pill --}}
         <div class="mobile-hamburger" style="display:none;position:relative;flex-shrink:0;margin-left:auto;" id="mobile-hamburger-wrap">
@@ -818,8 +842,28 @@
 <script>
     var header = document.getElementById('main-header');
 
+    // The mobile header search only appears once the page's hero search has
+    // fully scrolled past. The hero is rendered by Vue (mounts after this
+    // script), so locate it lazily each scroll until found; pages with no hero
+    // reveal after a small nudge.
+    var heroEl = null;
+    function revealThreshold() {
+        if (!heroEl) heroEl = document.querySelector('.hero-search-wrap');
+        if (heroEl) {
+            var top = heroEl.getBoundingClientRect().top + window.scrollY;
+            return top + heroEl.offsetHeight; // only once the hero search is gone
+        }
+        return 56; // no hero on this page → reveal shortly after scrolling
+    }
+
     window.addEventListener('scroll', function () {
-        header.classList.toggle('scrolled', window.scrollY > 10);
+        var y = window.scrollY;
+        header.classList.toggle('scrolled', y > 10);
+
+        var t = revealThreshold();
+        var on = header.classList.contains('search-on');
+        if (!on && y > t + 24)      header.classList.add('search-on');
+        else if (on && y < t - 24)  header.classList.remove('search-on');
     }, { passive: true });
 
     document.querySelectorAll('.nav-link').forEach(function(link) {

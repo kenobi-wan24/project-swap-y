@@ -8,6 +8,7 @@ use App\Http\Controllers\Pages\GarageSaleDetailController;
 use App\Http\Controllers\Pages\HomesController;
 use App\Http\Controllers\Pages\HomeDetailController;
 use App\Http\Controllers\Pages\ServicesController;
+use App\Http\Controllers\Pages\SearchController;
 use App\Http\Controllers\Pages\HowItWorksController;
 use App\Http\Controllers\Pages\ItemController;
 use App\Http\Controllers\Pages\ListingActionController;
@@ -28,16 +29,20 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 
 // Public routes
 Route::get('/', fn() => redirect()->route('items'))->name('home');
+Route::get('/search', [SearchController::class, 'index'])->name('search');
 Route::get('/browse', fn() => redirect()->route('items')); // legacy URL
 Route::get('/items',         [ItemsController::class,      'index'])->name('items');
 Route::get('/items/section/{key}', [ItemsController::class, 'section'])->name('items.section');
 Route::get('/homes',         [HomesController::class,      'index'])->name('homes');
+Route::get('/homes/section/{key}', [HomesController::class,  'section'])->name('homes.section');
 Route::get('/homes/create',  [HomesController::class,      'create'])->name('homes.create')->middleware('auth');
 Route::get('/homes/{id}',    [HomeDetailController::class, 'show'])->name('homes.show');
 Route::get('/garage-sale',           [GarageSaleController::class,       'index'])->name('garage-sale');
+Route::get('/garage-sale/section/{key}', [GarageSaleController::class,   'section'])->name('garage-sale.section');
 Route::get('/garage-sale/create',    [GarageSaleController::class,       'create'])->name('garage-sale.create')->middleware('auth');
 Route::get('/garage-sale/{id}',      [GarageSaleDetailController::class, 'show'])->name('garage-sale.show');
 Route::get('/services',      [ServicesController::class,   'index'])->name('services');
+Route::get('/services/section/{key}', [ServicesController::class, 'section'])->name('services.section');
 Route::get('/services/create',[ServicesController::class,  'create'])->name('services.create')->middleware('auth');
 Route::get('/how-it-works',  [HowItWorksController::class, 'index'])->name('how-it-works');
 Route::get('/items/create',  [ItemController::class,       'create'])->name('items.create')->middleware('auth');

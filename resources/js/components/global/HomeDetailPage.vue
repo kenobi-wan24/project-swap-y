@@ -11,6 +11,7 @@ const home = ref(Object.keys(raw).length ? raw : {
   type: 'Swap',
   title: 'Modern Studio in BGC',
   location: 'Bonifacio Global City, Taguig, Metro Manila',
+  latitude: 14.5507, longitude: 121.0494,
   distance: '1.2',
   beds: 'Studio', baths: 1, sqm: 32, floor: 18,
   value: 18000,
@@ -45,6 +46,17 @@ const home = ref(Object.keys(raw).length ? raw : {
     { id:4, type:'Sell',  title:'Townhouse in Paranaque', location:'Paranaque', value:6500000, beds:'3', image:'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&q=80', rating:5.0 },
   ],
 })
+
+// ── image resolution ──────────────────────────────────────────────────────────
+// Slots vary wildly in width (full-bleed hero vs. small thumb). Unsplash URLs
+// carry a `w=` param, so request a width that matches the slot — otherwise a
+// low-res source stretched across the hero looks blurry. Retina-aware (×2),
+// no-op for uploaded images (which have no resize param).
+function hq(url, slotWidth) {
+  if (!url || !url.includes('images.unsplash.com')) return url
+  const target = Math.min(slotWidth * 2, 2400)
+  return url.replace(/([?&])w=\d+/, `$1w=${target}`)
+}
 
 // ── gallery ───────────────────────────────────────────────────────────────────
 const showGallery   = ref(false)
@@ -91,6 +103,53 @@ const priceNote = computed(() => {
   if (home.value.type === 'Co-living') return 'Per room / month'
   return 'Per month'
 })
+
+// ── location map ──────────────────────────────────────────────────────────────
+const hasCoords = computed(() =>
+  typeof home.value.latitude === 'number' && typeof home.value.longitude === 'number'
+)
+
+let leafletMap = null
+
+function loadLeaflet() {
+  return new Promise((resolve) => {
+    if (window.L) { resolve(); return }
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link')
+      link.id = 'leaflet-css'; link.rel = 'stylesheet'
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+      document.head.appendChild(link)
+    }
+    const script = document.createElement('script')
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+    script.onload = resolve
+    document.head.appendChild(script)
+  })
+}
+
+async function initMap() {
+  if (!hasCoords.value || leafletMap) return
+  await loadLeaflet()
+  const center = [home.value.latitude, home.value.longitude]
+
+  leafletMap = window.L.map('home-detail-map', {
+    center, zoom: 15, zoomControl: true, scrollWheelZoom: false,
+  })
+  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19,
+  }).addTo(leafletMap)
+
+  const pin = window.L.divIcon({
+    className: '',
+    html: `<div style="width:30px;height:30px;background:#ED730C;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [30, 30], iconAnchor: [15, 30],
+  })
+  window.L.marker(center, { icon: pin }).addTo(leafletMap)
+  setTimeout(() => leafletMap?.invalidateSize(), 200)
+}
+
+onMounted(initMap)
+onUnmounted(() => { if (leafletMap) { leafletMap.remove(); leafletMap = null } })
 </script>
 
 <template>
@@ -111,7 +170,7 @@ const priceNote = computed(() => {
       style="position:absolute;left:20px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.12);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">
       <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <img :src="home.images[galleryIndex]" :alt="home.title"
+    <img :src="hq(home.images[galleryIndex], 1600)" :alt="home.title"
       style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:12px;">
     <button @click="nextPhoto"
       style="position:absolute;right:20px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.12);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">
@@ -120,7 +179,7 @@ const priceNote = computed(() => {
     <div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:8px;">
       <div v-for="(img, i) in home.images" :key="i" @click="galleryIndex = i"
         :style="{width:'52px',height:'38px',borderRadius:'6px',overflow:'hidden',cursor:'pointer',border: i===galleryIndex ? '2px solid #ED730C' : '2px solid transparent',opacity: i===galleryIndex ? 1 : 0.45,transition:'all .15s'}">
-        <img :src="img" style="width:100%;height:100%;object-fit:cover;">
+        <img :src="hq(img, 120)" style="width:100%;height:100%;object-fit:cover;">
       </div>
     </div>
   </div>
@@ -175,26 +234,27 @@ const priceNote = computed(() => {
     <!-- PHOTO GALLERY — layout adapts to how many photos the listing has -->
     <div class="gal-wrap">
 
-      <!-- one photo: single wide hero, no empty space -->
+      <!-- one photo: a single contained 16:9 hero — keeps a natural crop and
+           stays sharp instead of stretching one image across an ultra-wide band -->
       <div v-if="home.images.length === 1" class="gal-cell gal-single" @click="openGallery(0)">
-        <img :src="home.images[0]" :alt="home.title" class="gal-img">
+        <img :src="hq(home.images[0], 1280)" :alt="home.title" class="gal-img">
       </div>
 
       <!-- two photos: even split -->
       <div v-else-if="home.images.length === 2" class="gal-two">
         <div v-for="(img, i) in home.images" :key="i" class="gal-cell" @click="openGallery(i)">
-          <img :src="img" :alt="home.title" class="gal-img">
+          <img :src="hq(img, 700)" :alt="home.title" class="gal-img">
         </div>
       </div>
 
       <!-- three or four: hero + stacked side -->
       <div v-else-if="home.images.length <= 4" class="gal-hero-side">
         <div class="gal-cell" @click="openGallery(0)">
-          <img :src="home.images[0]" :alt="home.title" class="gal-img">
+          <img :src="hq(home.images[0], 1100)" :alt="home.title" class="gal-img">
         </div>
         <div class="gal-side" :style="{ gridTemplateRows: `repeat(${home.images.length - 1}, 1fr)` }">
           <div v-for="(img, i) in home.images.slice(1)" :key="i" class="gal-cell" @click="openGallery(i + 1)">
-            <img :src="img" :alt="home.title" class="gal-img">
+            <img :src="hq(img, 600)" :alt="home.title" class="gal-img">
           </div>
         </div>
       </div>
@@ -202,10 +262,10 @@ const priceNote = computed(() => {
       <!-- five or more: hero + 2×2 -->
       <div v-else class="gal-five">
         <div class="gal-cell gal-big" @click="openGallery(0)">
-          <img :src="home.images[0]" :alt="home.title" class="gal-img">
+          <img :src="hq(home.images[0], 1100)" :alt="home.title" class="gal-img">
         </div>
         <div v-for="(img, i) in home.images.slice(1, 5)" :key="i" class="gal-cell" @click="openGallery(i + 1)">
-          <img :src="img" :alt="home.title" class="gal-img">
+          <img :src="hq(img, 600)" :alt="home.title" class="gal-img">
           <div v-if="i === 3 && home.images.length > 5" class="gal-more">+{{ home.images.length - 5 }} more</div>
         </div>
       </div>
@@ -312,14 +372,23 @@ const priceNote = computed(() => {
           <p style="font-size:0.88rem;color:#78350f;line-height:1.65;margin:0;">{{ home.swap_terms }}</p>
         </div>
 
-        <!-- Map placeholder -->
+        <!-- Location -->
         <div>
-          <h2 style="font-size:1.1rem;font-weight:900;color:#1A1A1A;margin:0 0 14px;letter-spacing:-.02em;">Location</h2>
-          <div style="border-radius:16px;overflow:hidden;border:1.5px solid #EDE8E0;background:#f3f4f6;height:220px;display:flex;align-items:center;justify-content:center;">
-            <div style="text-align:center;">
+          <h2 style="font-size:1.1rem;font-weight:900;color:#1A1A1A;margin:0 0 6px;letter-spacing:-.02em;">Location</h2>
+          <div style="display:flex;align-items:flex-start;gap:7px;margin-bottom:14px;">
+            <svg width="15" height="15" fill="none" stroke="#ED730C" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:2px;"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <p style="font-size:0.85rem;font-weight:600;color:#4b5563;margin:0;line-height:1.45;">{{ home.location }}</p>
+          </div>
+
+          <!-- real map when coordinates exist -->
+          <div v-if="hasCoords" id="home-detail-map" style="height:300px;border-radius:16px;overflow:hidden;border:1.5px solid #EDE8E0;background:#f3f4f6;position:relative;z-index:0;"></div>
+
+          <!-- fallback when a listing has no pinned coordinates -->
+          <div v-else style="border-radius:16px;overflow:hidden;border:1.5px solid #EDE8E0;background:#f3f4f6;height:220px;display:flex;align-items:center;justify-content:center;">
+            <div style="text-align:center;padding:0 24px;">
               <svg width="28" height="28" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 8px;"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
               <p style="font-size:0.82rem;font-weight:700;color:#9ca3af;margin:0;">{{ home.location }}</p>
-              <p style="font-size:0.7rem;color:#d1d5db;margin:4px 0 0;">Map coming soon</p>
+              <p style="font-size:0.7rem;color:#d1d5db;margin:4px 0 0;">Exact map pin not provided for this listing</p>
             </div>
           </div>
         </div>
@@ -443,7 +512,9 @@ const priceNote = computed(() => {
 .gal-cell { position: relative; overflow: hidden; cursor: pointer; background: #f3f4f6; }
 .gal-cell:hover .gal-img { transform: scale(1.04); }
 
-.gal-single    { height: 420px; }
+/* single photo: a natural 16:9 hero, capped so it never balloons on wide
+   screens — avoids the ultra-wide 2.9:1 crop a full-height stretch produced */
+.gal-single    { aspect-ratio: 16 / 9; max-height: 460px; }
 .gal-two       { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; height: 420px; }
 .gal-hero-side { display: grid; grid-template-columns: 2fr 1fr; gap: 4px; height: 420px; }
 .gal-side      { display: grid; gap: 4px; min-height: 0; }
@@ -473,6 +544,14 @@ const priceNote = computed(() => {
   overflow: hidden; margin-bottom: 32px; background: #fff;
 }
 
+/* ── Leaflet map ── */
+:deep(.leaflet-control-attribution) {
+  font-size: 0.55rem !important;
+  opacity: 0.4 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .hd-columns { grid-template-columns: 1fr; gap: 32px; }
@@ -482,7 +561,8 @@ const priceNote = computed(() => {
   .hd-crumb { padding: 10px 16px; }
   .hd-main  { padding: 20px 16px 64px; }
   .gal-wrap { border-radius: 14px; }
-  .gal-single, .gal-two, .gal-hero-side, .gal-five { height: 280px; }
+  .gal-two, .gal-hero-side, .gal-five { height: 280px; }
+  .gal-single { max-height: 280px; }
   .gal-five { grid-template-columns: 2fr 1fr; }
   .gal-five .gal-cell:nth-child(n+4) { display: none; } /* hero + 2 on phones */
   .hd-stats { grid-template-columns: repeat(2, 1fr); }

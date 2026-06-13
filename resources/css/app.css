@@ -13,3 +13,29 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* ──────────────────────────────────────────────────────────────
+   SEARCH BARS — one consistent look for the hero search and the
+   nav (sticky) search on every page. Airbnb-style: a crisp, visible
+   border doing the edge work (not just a soft shadow) and dark,
+   high-contrast placeholder text. !important overrides the inline /
+   per-page scoped styles these pills ship with. The sticky pill's
+   border lives in navigation.blade.php (higher-specificity ID rule).
+   ────────────────────────────────────────────────────────────── */
+.hero-search-desktop {
+    border: 1px solid #DDDDDD !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+.hero-search-desktop:hover {
+    border-color: #C7C7C7 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+}
+.hero-search-desktop input::placeholder,
+.sticky-search-desktop input::placeholder,
+.hero-search-mobile input::placeholder,
+.sticky-search-mobile input::placeholder {
+    color: #6b7280 !important;   /* clearly a placeholder, but still very legible
+                                    (well lighter than the #1A1A1A typed text) */
+    opacity: 1;                  /* Firefox dims placeholders otherwise */
+    font-weight: 500;
+}
